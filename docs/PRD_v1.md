@@ -1,9 +1,9 @@
 # Verso — Product Requirements Document (v1)
 
 **Status:** Draft v1 (design locked, pre-implementation)
-**Date:** 2026-06-04
+**Date:** 2026-06-04 · addendum 2026-06-05 (added §12 positioning/GTM + founder-OS cross-reference)
 **Owner:** Slava (@Seventydotleven)
-**Grounding:** the verified "keep-it-simple" thesis (`Verso/research/THESIS_VERIFICATION.md`) + 28,496 lines of reverse-engineered harvest across 54 source notes and 3 synthesis briefs (`Verso/research/01_bad_guide/`, `02_core/`, `03_teardowns/`). Every default in this PRD traces to that evidence; load-bearing ones cite the source note in brackets, e.g. `[agentic-architectures]`.
+**Grounding:** the verified "keep-it-simple" thesis (`Verso/research/THESIS_VERIFICATION.md`) + 28,496 lines of reverse-engineered harvest across 54 source notes and 3 synthesis briefs (`Verso/research/01_bad_guide/`, `02_core/`, `03_teardowns/`). Every default in this PRD traces to that evidence; load-bearing ones cite the source note in brackets, e.g. `[agentic-architectures]`. A separate **founder-OS / go-to-market** layer — a 244-source deep index of *The Bad Guide* — lives in `Verso/research/04_bad_guide_full/` and feeds §12.
 
 ---
 
@@ -331,7 +331,25 @@ These are the harvest's genuine forks. v1 picks a default and moves; each is rev
 - **Thesis verification:** `Verso/research/THESIS_VERIFICATION.md` (3 independent layers; keep-it-simple confirmed as frontier consensus; the absolutes are opinion/prediction).
 - **Synthesis briefs:** `Verso/research/01_bad_guide/_SYNTHESIS.md` (8 design principles), `02_core/_SYNTHESIS.md` (ADOPT/OPT-IN/AVOID pattern table), `03_teardowns/_SYNTHESIS.md` (framework gap analysis + first-cut module map + 22 copyable mechanisms + 27 anti-patterns).
 - **54 cluster notes** under the three `research/0*/` folders are the per-source evidence trail; bracket tags in this PRD (e.g. `[agentic-architectures]`) name the note each load-bearing default comes from.
+- **Founder-OS / GTM layer:** `Verso/research/04_bad_guide_full/` — a 244-source deep index of *The Bad Guide* (`INDEX.md`) + `_SYNTHESIS.md` (15 cross-cutting frameworks, the 3-followers→hunted distribution playbook, taste checklists, the YC/fundraising one-pager, a tuned operating loop, and a Verso-specific GTM). Feeds §12.
 
 ---
 
-*PRD v1 — design locked, implementation pending. Next: per-step implementation plan (writing-plans), then Phase 0 build.*
+## 12. Positioning, the demo-able wedge & go-to-market
+
+The design above is *technical*; this section captures the few positioning facts that are genuinely **product requirements**, and points to the full go-to-market playbook. Source: `research/04_bad_guide_full/_SYNTHESIS.md`.
+
+**Counter-position (the one-line moat):** *"We don't force the graph."* LangGraph cannot drop the graph — it's its identity and its installed base — so this is a counter-position an incumbent structurally can't copy (7 Powers). Verso passes the **wrapper test**: a better base model makes the durable layer (context, evals, memory, the seam) *more* valuable, not obsolete.
+
+**The demo-able wedge is a design constraint, not marketing.** Verso must be screenshot-worthy by construction — the aha-moment has to fit in one image or diff. The three launch artifacts are also three design forcing-functions:
+- **W1 — the side-by-side:** `Agent(...).run()` in ~10 lines next to the equivalent ~150-line `StateGraph`. → keeps the API tiny on the 90% path (§7).
+- **W2 — the one-flag diff:** the `durable=True` change that adds crash-resume + HITL with **zero loop-code changes**. → this IS the seam test in §9; the diff must literally be one line.
+- **W3 — `agent.inspect()`** printing exactly what the model sees. → an inherently demo-able transparency surface; treat its output formatting as taste work, not debug dump.
+
+So §9's success criteria (tiny wedge, one-flag seam, honest inspect) double as the launch artifacts — build them to be screenshotted.
+
+**Go-to-market (pointer, not in this PRD's scope):** one channel — X build-in-public + Show HN (where Python engineers fighting LangGraph already are); cold-start = 5–10 named engineers recruited by hand + dogfood-first; build-in-public as the acquisition loop; spiky-POV launch (*"the loop was never the hard part — context and evals are, and every framework buries them"*). Full playbook: `04_bad_guide_full/_SYNTHESIS.md` §2 (distribution) + §6 (Verso GTM).
+
+---
+
+*PRD v1 — design locked, implementation pending. §12 (positioning/GTM) added 2026-06-05. Next: per-step implementation plan (writing-plans), then Phase 0 build.*

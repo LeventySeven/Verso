@@ -19,7 +19,8 @@ The design is grounded in evidence, not vibes:
    - `01_bad_guide/` — field-manual sources (Karpathy, Anthropic, context-engineering, evals, primitives-not-wrappers)
    - `02_core/` — agentic-architecture corpus + practitioner transcripts
    - `03_teardowns/` — RE of LangChain/LangGraph, CrewAI, Letta, Claude Agent SDK, Cursor, Codex, Devin, Perplexity, model-routing/retrieval/vector-memory infra
-3. **Design** — the PRD synthesizes all of the above into a phased, dogfood-first build plan.
+   - `04_bad_guide_full/` — founder-OS / go-to-market layer: a 244-source deep index of *The Bad Guide* (`INDEX.md`) + a synthesis (cross-cutting frameworks, distribution playbook, taste checklists, fundraising, operating loop, Verso GTM)
+3. **Design** — the PRD ([`docs/PRD_v1.md`](docs/PRD_v1.md)) synthesizes the technical layers into a phased, dogfood-first build plan; §12 folds in positioning + the demo-able wedge from the founder-OS layer.
 
 ## Non-goals
 
