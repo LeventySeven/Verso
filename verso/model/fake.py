@@ -11,9 +11,10 @@ class FakeModel:
 
     def __init__(self, responses: list[ModelResponse]):
         self._responses = list(responses)
-        self.calls: list[tuple[list[Message], list[Tool]]] = []
+        self.calls: list[tuple[list[Message], list[Tool], str | None]] = []
 
-    async def complete(self, messages: Sequence[Message], tools: Sequence[Tool]) -> ModelResponse:
-        self.calls.append((list(messages), list(tools)))
+    async def complete(self, messages: Sequence[Message], tools: Sequence[Tool],
+                       *, system: str | None = None) -> ModelResponse:
+        self.calls.append((list(messages), list(tools), system))
         assert self._responses, "FakeModel ran out of scripted responses"
         return self._responses.pop(0)

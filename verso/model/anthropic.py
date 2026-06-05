@@ -43,12 +43,15 @@ class AnthropicModel:
     def _to_anthropic_tools(self, tools: Sequence[Tool]) -> list[dict]:
         return [{"name": t.name, "description": t.description, "input_schema": t.parameters} for t in tools]
 
-    async def complete(self, messages: Sequence[Message], tools: Sequence[Tool]) -> ModelResponse:
+    async def complete(self, messages: Sequence[Message], tools: Sequence[Tool],
+                       *, system: str | None = None) -> ModelResponse:
         kwargs: dict[str, Any] = {
             "model": self.model_id,
             "max_tokens": self.max_tokens,
             "messages": self._to_anthropic_messages(messages),
         }
+        if system:
+            kwargs["system"] = system
         if tools:
             kwargs["tools"] = self._to_anthropic_tools(tools)
         resp = await self.client.messages.create(**kwargs)

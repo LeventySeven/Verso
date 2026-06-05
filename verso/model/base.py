@@ -35,5 +35,6 @@ class ModelResponse:
 class Model(Protocol):
     """A provider that turns a message history + available tools into one response."""
 
-    async def complete(self, messages: Sequence[Message], tools: Sequence["Tool"]) -> ModelResponse:
+    async def complete(self, messages: Sequence[Message], tools: Sequence["Tool"],
+                       *, system: str | None = None) -> ModelResponse:
         ...
