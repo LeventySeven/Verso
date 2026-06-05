@@ -1,0 +1,20 @@
+[project]
+name = "verso"
+version = "0.0.1"
+description = "A simple Python agent framework — the loop done right."
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.7", "anthropic>=0.40"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.6"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
