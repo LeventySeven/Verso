@@ -20,7 +20,10 @@ The design is grounded in evidence, not vibes:
    - `02_core/` — agentic-architecture corpus + practitioner transcripts
    - `03_teardowns/` — RE of LangChain/LangGraph, CrewAI, Letta, Claude Agent SDK, Cursor, Codex, Devin, Perplexity, model-routing/retrieval/vector-memory infra
    - `04_bad_guide_full/` — founder-OS / go-to-market layer: a 244-source deep index of *The Bad Guide* (`INDEX.md`) + a synthesis (cross-cutting frameworks, distribution playbook, taste checklists, fundraising, operating loop, Verso GTM)
-3. **Design** — the PRD ([`docs/PRD_v1.md`](docs/PRD_v1.md)) synthesizes the technical layers into a phased, dogfood-first build plan; §12 folds in positioning + the demo-able wedge from the founder-OS layer.
+   - `05_re_targets/` — gap analysis: `teardowns/` cross-referenced against the mid-2026 agentic landscape → a prioritized RE-target list (`TARGETS.md`)
+   - `06_design_resolutions/` — per-subsystem resolutions turning the RE into concrete Verso decisions + component specs (`_RESOLUTIONS.md`)
+   - `07_adversarial/` — a 30-agent adversarial audit of those decisions (`_VERDICT.md`): per-decision verdicts + the build/compose/defer v1 scope
+3. **Design** — the PRD ([`docs/PRD_v1.md`](docs/PRD_v1.md)) synthesizes the technical layers into a phased, dogfood-first build plan, **adversarially audited**: §10 resolved decisions, §12 positioning + the demo-able wedge, §13 the BUILD vs COMPOSE vs DEFER v1 scope — build the loop + context + `jsonish` parser; compose DBOS / Mem0 / Langfuse / Instructor; defer owned engines until dogfood proves the gap.
 
 ## Non-goals
 

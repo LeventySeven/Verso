@@ -1,7 +1,7 @@
 # Verso — Product Requirements Document (v1)
 
-**Status:** Draft v1 (design locked, pre-implementation)
-**Date:** 2026-06-04 · addendum 2026-06-05 (added §12 positioning/GTM + founder-OS cross-reference)
+**Status:** Draft v1 — design locked, **adversarially audited** (30-agent panel; `research/07_adversarial/_VERDICT.md`), pre-implementation
+**Date:** 2026-06-04 · addenda 2026-06-05: §12 positioning/GTM + founder-OS cross-reference; §10 resolved + §13 build/compose/defer scope (after a 12-agent resolution pass + a 30-agent adversarial audit)
 **Owner:** Slava (@Seventydotleven)
 **Grounding:** the verified "keep-it-simple" thesis (`Verso/research/THESIS_VERIFICATION.md`) + 28,496 lines of reverse-engineered harvest across 54 source notes and 3 synthesis briefs (`Verso/research/01_bad_guide/`, `02_core/`, `03_teardowns/`). Every default in this PRD traces to that evidence; load-bearing ones cite the source note in brackets, e.g. `[agentic-architectures]`. A separate **founder-OS / go-to-market** layer — a 244-source deep index of *The Bad Guide* — lives in `Verso/research/04_bad_guide_full/` and feeds §12.
 
@@ -102,6 +102,8 @@ Design invariant: the loop stays **<200 lines** because all weight (retry, failo
 
 ## 5. The tactical core (Chunk 2)
 
+> **[Audited 2026-06-05]** This section describes the full *target* design. **§13 is authoritative on what v1 actually BUILDS vs COMPOSES vs DEFERS** — notably: structured-output (§5.3) builds only the `jsonish` waterfall and *composes* its reask/mode-map/streaming from Instructor; memory (§5.4) and evals (§5.5) lock their schemas in Phase 0/1 but *compose* the engines from Mem0 and Langfuse+autoevals+Braintrust. Everything else here is Phase-0 BUILD.
+
 ### 5.1 Core loop (`core/loop.py`)
 
 A `<200`-line async ReAct loop:
@@ -177,6 +179,8 @@ No framework ships this; every winning *product* does. `Eval` is a core construc
 ---
 
 ## 6. Durable layer, multi-agent, safety, providers (Chunk 3)
+
+> **[Audited 2026-06-05]** Full *target* design; **§13 governs v1 sequencing.** The durable runtime (§6.1) LOCKS the seam in Phase 0 but COMPOSES the engine from DBOS at Phase 2 — default durability is **SYNC**, and the seam mechanism is DBOS/Centaur `ctx.step()` (not Burr). The model layer (§6.4) ships thin in Phase 0; balancer/budget/reasoning-gate move to Phase 2 and **learned routers are rejected for v1**. Multi-agent (§6.2) + Code Mode sandbox are Phase 3.
 
 ### 6.1 Durable runtime (`runtime/durable`)
 
@@ -306,23 +310,25 @@ The full architecture above is locked now; the **code** lands in phases, each do
 
 ---
 
-## 10. Deferred / open decisions (with chosen v1 defaults)
+## 10. Resolved decisions (adversarially audited)
 
-These are the harvest's genuine forks. v1 picks a default and moves; each is revisited after dogfooding.
+These forks were resolved by a 12-agent resolution pass (`research/06_design_resolutions/`) then stress-tested by a 30-agent adversarial panel (`research/07_adversarial/`). The panel could not break a single architecture — every load-bearing claim was re-verified against cloned source — but it found the design **scope-inverted** (it resolved on paper the final form of 8 engines before any agent ran, the exact anti-pattern the thesis forbids). Resolution: **lock every durable schema/interface now; COMPOSE proven engines via `pip install` proxies; build only the non-composable core; defer owned engines to the phase that proves the gap.** The build/compose/defer scope is **§13** (authoritative where it differs from §5/§6). Full per-decision verdicts: `research/07_adversarial/_VERDICT.md`.
 
-1. **Loop cap:** `max_steps=25` visible default + token-budget safety net + grace call. (vs Codex's no-cap.)
-2. **Schema substrate:** type-hints → schema natively; Pydantic v2 *optional*, never v1/v2 dual.
-3. **Streaming delta:** true-delta globally.
-4. **Multi-agent default topology:** single-agent default; orchestrator-workers + fan-out as the opt-in shapes; **instrument before recommending either** (evidence genuinely conflicts: Anthropic +90.2% vs Agent-S3 +13% from removing the hierarchy).
-5. **Memory taxonomy depth:** 4-tier default, extensible enum (not Memanto's fixed 13).
-6. **Compaction model:** observation-masking default; same-model summarize fallback; thread-handoff exposed.
-7. **Tool-flooding strategy:** deferred loading default; meta-tool router available for very large sources.
-8. **Durable substrate:** in-house Postgres/SQLite event-log + checkpoint for v1; clean seam to adopt Temporal/Trigger.dev later. *(Biggest deferred infra call.)*
-9. **Code-execution escape hatch (Code Mode):** deferred to ≥ Phase 3; sandbox provider TBD (E2B/Modal/V8 isolate).
-10. **HITL surface:** high-level `await ctx.hitl.request()` is the API; `Command(resume=)` stays internal.
-11. **Provider-quirk line:** core ships clean adapters for the top providers; deep quirk accumulation pushed to per-provider plugins.
-12. **Self-improvement:** ship `on_turn_complete`/`on_idle` hooks in v1; a built-in consolidation primitive is opt-in, not core.
-13. **Judge panel:** ship an overridable example panel config; never hardcode a single vendor.
+1. **Loop cap** — RESOLVED: `max_steps=25` visible + token-budget + single synthetic grace message. ✓ survives.
+2. **Schema substrate** — RESOLVED: **Pydantic v2 required** (not optional); single `TypeAdapter(fn)` schema-gen path; v1/v2 dual banned. ✓ survives.
+3. **Streaming delta** — RESOLVED: true-delta globally; reasoning filtered before the stop check. ✓ survives.
+4. **Multi-agent topology** — DEFER to Phase 3 (per §8): single-agent default; `subagent_delegate`/`fan_out` are thin asyncio wrappers (may land earlier if dogfood asks); `Orchestration(SharedTypedState)` waits until after the Phase-2 durable substrate (no RE source; contradicts the sourced message-passing pattern).
+5. **Memory taxonomy** — RESOLVED: 4-tier public enum + internal `EpistemicClass`; extensible. Types locked Phase 0; engine composed/deferred (§13).
+6. **Compaction** — RESOLVED: two-pass — LLM-free `prune()` observation-masking (N=10) routine; LLM `compact()` on overflow only; deterministic truncation last-ditch.
+7. **Tool-flooding / deferred loading** — DEFER to Phase 3 (per §8): the >20-tools problem doesn't exist for a solo dev writing 5–15 native `@tool`s; keep the Strata 4-stage design as a Phase-3 appendix (add an `inputSchema.properties` branch — Strata's param signal is otherwise dead code for MCP).
+8. **Durable substrate** — RESOLVED, **split** (was the biggest call): **(A) LOCK the seam now** — `durable=True` selects a `CheckpointBackend` via `RunContext` polymorphism; loop source identical; the `async with ctx.step()` block holds ONLY the single call + assignment (side effects inside are skipped on durable resume). Correct citation: DBOS `_core.py` / Centaur `workflow_engine.py:338-435` (NOT Burr — it checkpoints at the action boundary). **(B) COMPOSE the engine** = `pip install dbos` behind the interface (DBOS's `workflow_status`+`operation_outputs` IS this schema); build the bespoke 5-table engine only if dogfood names DBOS friction. **(C) Default durability = SYNC, not ASYNC** (ASYNC re-fires LLM calls on crash → divergent result → corrupted event log); `@tool(destructive=True)` forces SYNC; `seq` via DB IDENTITY, never `MAX(seq)+1`.
+9. **Code Mode sandbox** — DEFER to Phase 3 (per §8): default provider = microsandbox (local libkrun, + a KVM-availability check); E2B/Daytona as opt-in adapters behind one `CodeSandbox` protocol.
+10. **HITL surface** — RESOLVED: `await ctx.hitl.request(question, timeout=86400)` is the only public API, over a Resonate-style named Durable Promise; `interrupt()`/`Command(resume=)` stays internal.
+11. **Model layer** — RESOLVED (thin core now; advanced routing deferred; **learned routers REJECTED for v1**): Phase 0 builds the thin layer (`ProviderProfile`+`OMIT`, Anthropic/OpenAI/Google, error-typed two-axis failover, `require_parameters` at init, `call_with_retry`, force `include_usage`; `asyncio.Lock`, not `threading.Lock`). DEFER PeakEWMA/P2C balancer + budget-Redis + reasoning gate to Phase 2 (need concurrency/traces to calibrate). REJECT learned routers (RoRF/ConfidenceCascade/KNN) — ConfidenceCascade needs logprobs Anthropic doesn't expose; RoRF needs a calibration corpus that doesn't exist; both violate the §2 "not a router cult" non-goal. Lock a 3-line `LearnedRouter` Protocol only.
+12. **Self-improvement** — RESOLVED: ship `on_stop`/`on_idle`/`on_turn_complete` hooks v1; consolidation ("dream") is opt-in, not core.
+13. **Judge panel** — RESOLVED: overridable `DEFAULT_JUDGE_PANEL` (model strings as module constants) + `.single(model)` + full custom; never vendor-hardcoded.
+
+**Correctness fixes the panel surfaced (apply regardless of scope):** durable default ASYNC→SYNC; the seam citation is DBOS/Centaur not Burr, and the `ctx.step()` block must hold only the single call/assignment or durable resume silently diverges; `remember()` currently bypasses memory extraction (pick one write model — Mem0 direct-extract); OTel cache attrs need **dot** form (`gen_ai.usage.cache_read.input_tokens`); drop the `RERANKER` span kind (downgrades to SPAN in Langfuse; Verso has no reranker primitive); a reask on a non-idempotent/destructive tool must default `allow_reask=False` (else it can silently rewrite the whole call).
 
 ---
 
@@ -352,4 +358,33 @@ So §9's success criteria (tiny wedge, one-flag seam, honest inspect) double as 
 
 ---
 
-*PRD v1 — design locked, implementation pending. §12 (positioning/GTM) added 2026-06-05. Next: per-step implementation plan (writing-plans), then Phase 0 build.*
+## 13. Revised v1 scope — BUILD vs COMPOSE vs DEFER (adversarially audited)
+
+The load-bearing output of the audit (`research/07_adversarial/_VERDICT.md` §2); **authoritative where it differs from the "build" framing in §5/§6.** Rule: **build the irreducible core + the two non-composable pieces; compose the solved engines behind locked interfaces; defer every owned engine to the phase that proves the gap.** The owned engines are internals the user never touches, so swapping a proxy for an in-house version later is invisible to products built on Verso.
+
+**Phase 0 — dogfoodable tactical core (~6–8 weeks solo) · BUILD, full quality:**
+- `core/loop.py` — the <200-line async ReAct loop (StopReason, `max_steps=25` + grace, doom-loop inspector, `AgentResult`).
+- `context/` — `RunContext` · `ContextBundle` · KV-cache discipline · hard budget · `prune()` observation-masking · `inspect()` byte-equality. *(The deep differentiator — real, not a stub. LLM `compact()` deferred to "when prune isn't enough.")*
+- `tools/` — `@tool`→`TypeAdapter(fn)` · `{data,error,ok}` dispatch that never raises · `ToolError` · repair ladder · `think`/`done`. **Native only — no MCP, no deferred loader.**
+- `tools/jsonish.py` + `coerce.py` — the BAML 5-stage waterfall + typed-Flag coercion (**the one engine built in v1 — genuinely non-composable**). **COMPOSE the rest of structured-output from Instructor** (reask + provider mode-map + `Partial[T]`, openai-dep stripped; `allow_reask=False` on non-idempotent tools).
+- `model/` — the **thin** layer only (~250 lines): `ProviderProfile`+`OMIT`, 3 providers, error-typed two-axis failover, `require_parameters`, `call_with_retry`, usage. No balancer, no learned routers, no reasoning gate.
+- `stream/` — one 7-type true-delta event + normalizer + SSE. *(Resumable `attach()` → Phase 2.)*
+- **Exit:** build a real personal agent on it.
+
+**Phase 1 — memory + the eval wedge, as INTERFACES over PROXIES (~3–4 weeks solo):**
+- `memory/` — **LOCK** types + `MemoryBackend` interface + DDL. **SHIP** `SqliteVecBackend` (~100 ln) + a `Mem0Backend` adapter (~40–80 ln; Mem0 V3 = the copied ADD-only write policy). No graph/bi-temporal/consolidation yet. Fix `remember()` to use one write model (Mem0 direct-extract).
+- `evals/` — **BUILD** `VersoSpan`/`VersoScore` + constants (~80–100 ln), OTel emit (`gen_ai.*`, dot-form cache attrs, no `RERANKER`), and `define_outcome`. **COMPOSE the engine:** self-hosted Langfuse (trace store + online scheduler) + `autoevals`/DeepEval (scorers) + `braintrust.Eval()` (offline CI).
+- `safety/hooks.py` — the 5-stage lifecycle hooks.
+- **Exit:** an eval suite (through the proxy) drives an iteration on the Phase-0 agent.
+
+**Phase 2 — the seam, proven (the moment of truth):**
+- `runtime/` — **LOCK** the seam (`PersisterHook`/`RunContext` polymorphism); back it with **DBOS** behind a minimal `CheckpointBackend`; prove the success criterion (identical agent, one flag, zero loop-code changes); enforce the `ctx.step()` body-contract; **default durability = SYNC**. Build the bespoke engine only if DBOS friction is named.
+- `safety/permissions.py` + `confidence.py` + `max_budget_usd` (counter, no Redis); `model/balancer.py` + reasoning gate (now calibratable); resumable `attach()`.
+- **Colocated Postgres** is forced here by the seam — install the 5 checkpoint tables only (memory/trace tables join the *same* PG at Phase 3, which is when "you already run PG → memory free" is actually earned). *(pgroonga is a separate install — on stock PG the BM25 arm falls back to tsvector; not "zero new services.")*
+- **Exit:** the same agent runs a long, crash-resumable, HITL-gated task via `durable=True`.
+
+**Phase 3+ — opt-in scale (build only what dogfood demanded):** the owned durable engine (if DBOS friction proven), the owned memory engine (Hindsight model: extraction/graph/BM25/bi-temporal/consolidation — if Mem0 gaps proven), the owned eval store (correction-flywheel / `source_span_id` / p50–p80 horizons / `verify_grounding` — if Langfuse gaps proven), MCP + deferred tool-loader, pgvector + graph arm, multi-agent (`subagent_delegate`/`fan_out` first; `Orchestration` after its coordination backend is decided), sandboxes (microsandbox + KVM check). **Each gated on a proven gap, not a paper design.**
+
+---
+
+*PRD v1 — design locked, adversarially audited (12-agent resolution + 30-agent panel), implementation pending. §10 resolved + §12 (positioning/GTM) + §13 (build/compose/defer scope) added 2026-06-05. Next: `writing-plans` for Phase 0, then build.*
