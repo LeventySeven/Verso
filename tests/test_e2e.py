@@ -59,3 +59,17 @@ async def test_e2e_done_tool_offline():
     fm = FakeModel([ModelResponse(text="", tool_calls=[ToolCall(id="d", name="done", arguments={"result": "complete"})], usage=Usage())])
     result = await Agent(model=fm, tools=[done]).run("finish")
     assert result.output == "complete" and result.stop_reason is StopReason.DONE
+
+
+# --- appended: context engineering, offline ---
+async def test_e2e_inspect_offline():
+    from verso.model.fake import FakeModel
+    from verso.model.base import ModelResponse
+    from verso.types import Usage
+    fm = FakeModel([ModelResponse(text="hi", tool_calls=[], usage=Usage())])
+    agent = Agent(model=fm, tools=[add], instructions="be terse")
+    bundle = agent.inspect("what is 2+2?")
+    rendered = bundle.render()
+    assert "[system]" in rendered and "be terse" in rendered
+    assert "[user] what is 2+2?" in rendered
+    assert bundle.estimate_tokens() > 0

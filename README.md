@@ -47,6 +47,18 @@ from verso.tools import builtins
 agent = Agent(model=..., tools=[builtins.done, my_tool])   # loop ends when the model calls done(result=...)
 ```
 
+**Inspect the context** — see exactly what the model will receive (byte-for-byte):
+
+```python
+agent = Agent(model=..., tools=[add], instructions="Be terse.", max_context_tokens=8000)
+print(agent.inspect("What is 2+2?").render())
+# [system] Be terse.
+# [tools] [{"description": "...", "name": "add", "parameters": {...}}]
+# [user] What is 2+2?
+```
+
+Instructions become a stable **system** prefix (KV-cache friendly); when the running context exceeds `max_context_tokens`, old tool outputs are masked (`prune()`), never silently dropped.
+
 ## Status
 
 Design-locked, pre-implementation. The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**.
