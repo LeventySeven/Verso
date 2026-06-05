@@ -29,3 +29,4 @@ class AgentResult:
     stop_reason: StopReason
     usage: Usage
     steps: int
+    parsed: object | None = None   # set when run(output_type=...) succeeds
