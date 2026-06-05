@@ -6,6 +6,7 @@ from enum import Enum
 
 class StopReason(str, Enum):
     END_TURN = "end_turn"      # model returned a final text answer (no tool calls)
+    DONE = "done"              # model called the `done` tool to terminate with a result
     MAX_STEPS = "max_steps"    # loop hit the max_steps cap
     ERROR = "error"            # unrecoverable error (later phases add more reasons)
 
