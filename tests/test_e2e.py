@@ -1,9 +1,11 @@
 # tests/test_e2e.py
 import os
 import pytest
+from pydantic import BaseModel
 from verso import Agent, tool, init_model
 from verso.model.fake import FakeModel
 from verso.model.base import ModelResponse, ToolCall
+from verso.tools.builtins import done
 from verso.types import Usage, StopReason
 
 
@@ -34,3 +36,26 @@ async def test_e2e_live_anthropic():
     assert "42" in result.output
     assert result.stop_reason is StopReason.END_TURN
     assert result.usage.output_tokens > 0
+
+
+# --- appended: structured output + done, offline ---
+class Sum(BaseModel):
+    total: int
+
+
+async def test_e2e_structured_output_offline():
+    from verso.model.fake import FakeModel
+    from verso.model.base import ModelResponse
+    from verso.types import Usage
+    fm = FakeModel([ModelResponse(text='{"total": 42}', tool_calls=[], usage=Usage())])
+    result = await Agent(model=fm).run("sum 20 and 22 as JSON", output_type=Sum)
+    assert result.parsed == Sum(total=42)
+
+
+async def test_e2e_done_tool_offline():
+    from verso.model.fake import FakeModel
+    from verso.model.base import ModelResponse, ToolCall
+    from verso.types import Usage
+    fm = FakeModel([ModelResponse(text="", tool_calls=[ToolCall(id="d", name="done", arguments={"result": "complete"})], usage=Usage())])
+    result = await Agent(model=fm, tools=[done]).run("finish")
+    assert result.output == "complete" and result.stop_reason is StopReason.DONE

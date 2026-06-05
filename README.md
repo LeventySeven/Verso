@@ -27,6 +27,26 @@ asyncio.run(main())
 
 Set `ANTHROPIC_API_KEY` first. Tests run offline via a `FakeModel`: `uv run pytest`.
 
+**Structured output** — ask for a type and get it back parsed:
+
+```python
+from pydantic import BaseModel
+
+class Point(BaseModel):
+    x: int
+    y: int
+
+result = await agent.run("Give me a point at 1,2 as JSON.", output_type=Point)
+print(result.parsed)            # Point(x=1, y=2)  — reasks once if the model's first answer won't parse
+```
+
+**`done` tool** — explicit, structured termination instead of sentinel strings:
+
+```python
+from verso.tools import builtins
+agent = Agent(model=..., tools=[builtins.done, my_tool])   # loop ends when the model calls done(result=...)
+```
+
 ## Status
 
 Design-locked, pre-implementation. The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**.
