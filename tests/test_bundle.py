@@ -61,3 +61,12 @@ def test_render_shows_system_tools_and_turns():
     assert "[tools]" in out
     assert "[user] add 1 and 2" in out
     assert "add(" in out  # the tool call is rendered
+
+
+def test_render_and_estimate_tolerate_non_json_args():
+    # non-JSON-native tool args (e.g. a set) must not crash render()/estimate_tokens() (recheck nit)
+    b = ContextBundle(history=[
+        Message(role="assistant", content="", tool_calls=[ToolCall(id="t", name="f", arguments={"s": {1, 2}})]),
+    ])
+    assert "f(" in b.render()
+    assert b.estimate_tokens() >= 0

@@ -8,10 +8,15 @@ from verso.model.base import Message
 from verso.tools.tool import Tool
 
 
+def _dumps(obj) -> str:
+    # total (never raises) deterministic serialization; default=str coerces non-JSON args
+    return json.dumps(obj, sort_keys=True, default=str)
+
+
 def _message_text(m: Message) -> str:
     parts = [m.content or ""]
     for tc in m.tool_calls:
-        parts.append(f"{tc.name}({json.dumps(tc.arguments, sort_keys=True)})")
+        parts.append(f"{tc.name}({_dumps(tc.arguments)})")
     return " ".join(p for p in parts if p)
 
 
@@ -31,9 +36,8 @@ class ContextBundle:
 
     def tool_schema_text(self) -> str:
         # deterministic (sorted-key) serialization — the cache-stable tool prefix
-        return json.dumps(
-            [{"name": t.name, "description": t.description, "parameters": t.parameters} for t in self.tools],
-            sort_keys=True,
+        return _dumps(
+            [{"name": t.name, "description": t.description, "parameters": t.parameters} for t in self.tools]
         )
 
     def stable_prefix(self) -> str:
@@ -60,7 +64,7 @@ class ContextBundle:
             extra = ""
             if m.tool_calls:
                 extra = " -> " + ", ".join(
-                    f"{tc.name}({json.dumps(tc.arguments, sort_keys=True)})" for tc in m.tool_calls
+                    f"{tc.name}({_dumps(tc.arguments)})" for tc in m.tool_calls
                 )
             lines.append(f"[{m.role}] {m.content}{extra}")
         return "\n".join(lines)
