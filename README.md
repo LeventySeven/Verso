@@ -6,6 +6,27 @@ Its organizing idea is the **tactical↔durable seam**: the same agent runs ephe
 
 > The pitch, and the counter-position to LangGraph/CrewAI: **we don't force the graph.**
 
+## Quickstart (Phase 0 — walking skeleton)
+
+```python
+import asyncio
+from verso import Agent, tool, init_model
+
+@tool
+def add(a: int, b: int) -> int:
+    "Add two integers."
+    return a + b
+
+async def main():
+    agent = Agent(model=init_model("anthropic:claude-sonnet-4-6"), tools=[add])
+    result = await agent.run("What is 20 + 22? Use the add tool.")
+    print(result.output, "·", result.stop_reason, "·", result.usage)
+
+asyncio.run(main())
+```
+
+Set `ANTHROPIC_API_KEY` first. Tests run offline via a `FakeModel`: `uv run pytest`.
+
 ## Status
 
 Design-locked, pre-implementation. The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**.
