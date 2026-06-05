@@ -43,6 +43,9 @@ async def run_loop(model: Model, tools: Sequence[Tool], task: str,
             else:
                 result = await dispatch(t, tc.arguments)
                 content = _format_result(result.data) if result.ok else f"Error: {result.error}"
+                if tc.name == "done" and result.ok:
+                    return AgentResult(output=_format_result(result.data),
+                                       stop_reason=StopReason.DONE, usage=usage, steps=step)
             messages.append(Message(role="tool", content=content, tool_call_id=tc.id, name=tc.name))
 
     return AgentResult(output="", stop_reason=StopReason.MAX_STEPS, usage=usage, steps=max_steps)
