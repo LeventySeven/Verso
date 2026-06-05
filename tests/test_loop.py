@@ -1,7 +1,7 @@
 # tests/test_loop.py
 from verso.core.loop import run_loop
 from verso.model.fake import FakeModel
-from verso.model.base import Message, ModelResponse, ToolCall
+from verso.model.base import ModelResponse, ToolCall
 from verso.tools.tool import tool
 from verso.types import StopReason, Usage
 

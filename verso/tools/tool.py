@@ -24,6 +24,8 @@ def _build_args_model(fn: Callable[..., Any]) -> type:
     for pname, param in sig.parameters.items():
         if pname in ("self", "cls"):
             continue
+        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+            continue  # *args/**kwargs can't become typed JSON-schema fields
         annotation = hints.get(pname, str)
         default = ... if param.default is inspect.Parameter.empty else param.default
         fields[pname] = (annotation, default)

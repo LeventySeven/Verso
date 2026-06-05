@@ -1,5 +1,6 @@
 # tests/test_fake_model.py
 from verso.model.base import Message, ToolCall, ModelResponse
+from verso.model.fake import FakeModel
 from verso.types import Usage
 
 
@@ -20,9 +21,6 @@ def test_model_response_fields():
     assert r.text == "done"
     assert r.tool_calls == []
     assert r.usage.input_tokens == 1
-
-
-from verso.model.fake import FakeModel
 
 
 async def test_fake_model_returns_scripted_responses_in_order():

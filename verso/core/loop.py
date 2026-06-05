@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Sequence
 
-from verso.model.base import Message, Model, ToolCall
+from verso.model.base import Message, Model
 from verso.tools.dispatch import dispatch
 from verso.tools.tool import Tool
 from verso.types import AgentResult, StopReason, Usage

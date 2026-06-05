@@ -1,5 +1,4 @@
 # tests/test_dispatch.py
-import pytest
 from verso.tools.tool import tool
 from verso.tools.dispatch import dispatch, ToolResult
 
