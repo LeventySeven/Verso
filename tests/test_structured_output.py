@@ -45,3 +45,15 @@ async def test_run_without_output_type_unchanged():
     result = await Agent(model=fm).run("hi")
     assert result.output == "plain text"
     assert result.parsed is None
+
+
+async def test_reask_accumulates_usage_and_steps():
+    # regression B2: the first attempt's usage/steps must not be discarded on reask
+    fm = FakeModel([
+        ModelResponse(text="sorry, not json", tool_calls=[], usage=Usage(input_tokens=10, output_tokens=5)),
+        ModelResponse(text='{"x": 1, "y": 2}', tool_calls=[], usage=Usage(input_tokens=7, output_tokens=3)),
+    ])
+    result = await Agent(model=fm).run("give a point", output_type=Point)
+    assert result.parsed == Point(x=1, y=2)
+    assert result.usage == Usage(input_tokens=17, output_tokens=8)
+    assert result.steps == 2

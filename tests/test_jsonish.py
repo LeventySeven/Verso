@@ -42,3 +42,10 @@ def test_unparseable_raises():
 def test_non_string_raises():
     with pytest.raises(JsonishError):
         parse(123)  # type: ignore[arg-type]
+
+
+def test_light_fix_does_not_corrupt_string_values():
+    # py-literal words and structural chars INSIDE strings must be preserved (regression: B1)
+    assert parse('{"note": "this is True love", "v": True}') == {"note": "this is True love", "v": True}
+    assert parse('{"msg": "None of that", "x": None}') == {"msg": "None of that", "x": None}
+    assert parse('{"s": "a,]b", "n": None}') == {"s": "a,]b", "n": None}

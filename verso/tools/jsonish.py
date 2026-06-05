@@ -52,12 +52,57 @@ def _candidates(text: str) -> Iterator[str]:
         yield balanced
 
 
+_PY_LITERALS = (("True", "true"), ("False", "false"), ("None", "null"))
+
+
 def _light_fix(s: str) -> str:
-    s = re.sub(r",(\s*[}\]])", r"\1", s)      # trailing commas
-    s = re.sub(r"\bTrue\b", "true", s)        # python -> json literals
-    s = re.sub(r"\bFalse\b", "false", s)
-    s = re.sub(r"\bNone\b", "null", s)
-    return s
+    """Apply structural fixes (drop trailing commas, py->json literals) ONLY outside
+    string literals, so string VALUES are never mutated."""
+    out: list[str] = []
+    in_str = False
+    esc = False
+    i = 0
+    n = len(s)
+    while i < n:
+        ch = s[i]
+        if in_str:
+            out.append(ch)
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            i += 1
+            continue
+        if ch == '"':
+            in_str = True
+            out.append(ch)
+            i += 1
+            continue
+        if ch == ",":  # drop a trailing comma before } or ]
+            j = i + 1
+            while j < n and s[j] in " \t\r\n":
+                j += 1
+            if j < n and s[j] in "}]":
+                i += 1
+                continue
+        replaced = False
+        for word, repl in _PY_LITERALS:  # py literal -> json, at a word boundary
+            if s.startswith(word, i):
+                before_ok = i == 0 or not (s[i - 1].isalnum() or s[i - 1] == "_")
+                aft = i + len(word)
+                after_ok = aft >= n or not (s[aft].isalnum() or s[aft] == "_")
+                if before_ok and after_ok:
+                    out.append(repl)
+                    i = aft
+                    replaced = True
+                    break
+        if replaced:
+            continue
+        out.append(ch)
+        i += 1
+    return "".join(out)
 
 
 def parse(text: str) -> Any:

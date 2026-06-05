@@ -35,6 +35,8 @@ class Agent:
                                    max_steps=self.max_steps, instructions=self.instructions)
             try:
                 retry.parsed = coerce(retry.output, output_type)
+                retry.usage = result.usage + retry.usage   # don't discard the first attempt
+                retry.steps = result.steps + retry.steps
                 return retry
             except CoercionError as second:
                 name = getattr(output_type, "__name__", repr(output_type))
