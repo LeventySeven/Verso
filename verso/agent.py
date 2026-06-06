@@ -1,10 +1,12 @@
 # verso/agent.py
 from __future__ import annotations
-from typing import Sequence
+from typing import AsyncIterator, Sequence
 
 from verso.context.bundle import ContextBundle
 from verso.core.loop import build_bundle, run_loop
+from verso.core.stream_loop import run_stream
 from verso.model.base import Model
+from verso.stream.events import StreamEvent
 from verso.tools.coerce import CoercionError, StructuredOutputError, coerce
 from verso.tools.tool import Tool
 from verso.types import AgentResult
@@ -53,3 +55,9 @@ class Agent:
                 raise StructuredOutputError(
                     f"could not produce {name} after one reask: {second}"
                 ) from second
+
+    async def stream(self, task: str) -> AsyncIterator[StreamEvent]:
+        async for ev in run_stream(self.model, self.tools, task, max_steps=self.max_steps,
+                                   instructions=self.instructions,
+                                   max_context_tokens=self.max_context_tokens):
+            yield ev
