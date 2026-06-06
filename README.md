@@ -59,6 +59,20 @@ print(agent.inspect("What is 2+2?").render())
 
 Instructions become a stable **system** prefix (KV-cache friendly); when the running context exceeds `max_context_tokens`, old tool outputs are masked (`prune()`), never silently dropped.
 
+**Reliability** — retry + cross-model failover, error-typed:
+
+```python
+from verso import Agent, FailoverModel, RetryPolicy, init_model
+
+model = FailoverModel(
+    [init_model("anthropic:claude-sonnet-4-6"), init_model("anthropic:claude-opus-4-8")],
+    retry=RetryPolicy(max_attempts=6, initial=4.0, max=240.0),
+)
+agent = Agent(model=model)
+# transient errors + rate limits retry with backoff, then fail over to the next candidate;
+# auth / content-policy errors raise immediately (no blind retry). Every try is in model.attempts.
+```
+
 ## Status
 
 Design-locked, pre-implementation. The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**.

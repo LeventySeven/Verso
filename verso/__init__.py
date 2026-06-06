@@ -5,12 +5,17 @@ from verso.tools.coerce import CoercionError, StructuredOutputError
 from verso.types import AgentResult, StopReason, Usage
 from verso.model.base import Model, Message, ModelResponse, ToolCall
 from verso.context.bundle import ContextBundle
+from verso.model.failover import FailoverModel, AllCandidatesFailed
+from verso.model.retry import RetryPolicy, AttemptRecord, call_with_retry
+from verso.model.errors import FailureKind, classify
 
 __version__ = "0.0.1"
 __all__ = [
     "Agent", "tool", "Tool", "AgentResult", "StopReason", "Usage",
     "Model", "Message", "ModelResponse", "ToolCall", "init_model",
     "CoercionError", "StructuredOutputError", "ContextBundle",
+    "FailoverModel", "AllCandidatesFailed", "RetryPolicy", "AttemptRecord",
+    "call_with_retry", "FailureKind", "classify",
 ]
 
 
