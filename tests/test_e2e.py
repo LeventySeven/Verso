@@ -73,3 +73,21 @@ async def test_e2e_inspect_offline():
     assert "[system]" in rendered and "be terse" in rendered
     assert "[user] what is 2+2?" in rendered
     assert bundle.estimate_tokens() > 0
+
+
+# --- appended: streaming, offline ---
+async def test_e2e_stream_and_sse_offline():
+    from verso import Agent, EventType
+    from verso.stream.sse import sse
+    from verso.model.fake import FakeModel
+    from verso.model.base import ModelResponse
+    from verso.types import Usage
+    fm = FakeModel([ModelResponse(text="hello", tool_calls=[], usage=Usage())])
+    agent = Agent(model=fm)
+    events = [e async for e in agent.stream("hi")]
+    assert "".join(e.text for e in events if e.type is EventType.MESSAGE_DELTA) == "hello"
+    assert events[-1].type is EventType.DONE
+
+    fm2 = FakeModel([ModelResponse(text="hello", tool_calls=[], usage=Usage())])
+    lines = [ln async for ln in sse(Agent(model=fm2).stream("hi"))]
+    assert lines[-1] == "data: [DONE]\n\n"

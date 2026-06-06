@@ -73,6 +73,23 @@ agent = Agent(model=model)
 # auth / content-policy errors raise immediately (no blind retry). Every try is in model.attempts.
 ```
 
+**Streaming** — a typed, true-delta event stream (and SSE for HTTP):
+
+```python
+async for ev in agent.stream("What is 2+2? Use the add tool."):
+    if ev.type.value == "message.delta":
+        print(ev.text, end="", flush=True)
+    elif ev.type.value == "tool.start":
+        print(f"\n[calling {ev.tool}({ev.arguments})]")
+    elif ev.type.value == "done":
+        print("\n", ev.result.stop_reason)
+
+# ship it over HTTP:
+from verso.stream.sse import sse
+async for frame in sse(agent.stream("...")):   # 'data: {json}\n\n' ... 'data: [DONE]\n\n'
+    ...
+```
+
 ## Status
 
 Design-locked, pre-implementation. The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**.
