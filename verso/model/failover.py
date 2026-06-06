@@ -16,7 +16,10 @@ class AllCandidatesFailed(Exception):
 
 class FailoverModel:
     """A Model that tries candidates in order, retrying each (call_with_retry) and advancing
-    to the next on a FAILOVERABLE failure. AUTH/content-policy/other re-raise immediately."""
+    to the next on a FAILOVERABLE failure. AUTH/content-policy/other re-raise immediately.
+
+    Note: ``.attempts`` records only the most recent ``complete()`` call — do not share one
+    FailoverModel instance across concurrent runs if you intend to read ``.attempts``."""
 
     def __init__(self, candidates: Sequence[Model], *, retry: RetryPolicy | None = None,
                  require_parameters: bool = True):

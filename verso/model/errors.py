@@ -31,7 +31,8 @@ def classify(exc: BaseException) -> FailureKind:
         return FailureKind.AUTH
     if "content" in msg and "policy" in msg:
         return FailureKind.CONTENT_POLICY
-    if status == 400 and ("too long" in msg or "context" in msg or "maximum context" in msg):
+    if status == 400 and ("too long" in msg or "context length" in msg
+                          or "context window" in msg or "maximum context" in msg):
         return FailureKind.CONTEXT_WINDOW
     if (isinstance(status, int) and 500 <= status < 600) \
             or isinstance(exc, (TimeoutError, ConnectionError)) \

@@ -44,3 +44,10 @@ def test_membership_sets():
     assert FailureKind.RATE_LIMIT in RETRYABLE and FailureKind.TRANSIENT in RETRYABLE
     assert FailureKind.AUTH not in RETRYABLE
     assert FailureKind.CONTEXT_WINDOW in FAILOVERABLE and FailureKind.AUTH not in FAILOVERABLE
+
+
+def test_bare_context_word_400_is_other_not_context_window():
+    # a 400 that merely mentions "context" must NOT trigger a wasted failover (recheck nit)
+    assert classify(HTTPErr(400, "missing required context field")) is FailureKind.OTHER
+    # real context-overflow phrasings still classify correctly
+    assert classify(HTTPErr(400, "context window exceeded")) is FailureKind.CONTEXT_WINDOW
