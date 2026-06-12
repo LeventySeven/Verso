@@ -23,7 +23,7 @@ class SqliteCheckpointStore:
         data = json.dumps({
             "trace_id": cp.trace_id, "task": cp.task, "instructions": cp.instructions,
             "history": cp.history, "usage_in": cp.usage_in, "usage_out": cp.usage_out, "step": cp.step,
-            "pending": None if p is None else {"prompt": p.prompt, "key": p.key,
+            "pending": None if p is None else {"prompt": p.prompt, "key": p.key, "kind": p.kind,
                                                "tool_name": p.tool_name, "tool_call_id": p.tool_call_id},
         })
         self.db.execute("INSERT OR REPLACE INTO checkpoint(trace_id, data) VALUES(?, ?)", (cp.trace_id, data))

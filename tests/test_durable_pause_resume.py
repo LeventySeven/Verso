@@ -1,6 +1,7 @@
 from verso import Agent, tool
 from verso.safety.hooks import Hooks, PermissionDecision
 from verso.durable.inmem import InMemoryCheckpointStore
+from verso.durable.sqlite import SqliteCheckpointStore
 from verso.model.fake import FakeModel
 from verso.model.base import ModelResponse, ToolCall
 from verso.types import Usage, StopReason
@@ -83,3 +84,19 @@ async def test_durable_pause_defers_unprocessed_siblings_so_resume_is_well_forme
     assert "t2" in result_ids
     resumed = await agent.resume(paused.resume_token, approve=True)   # resolves t1; turn stays well-formed
     assert resumed.stop_reason == StopReason.END_TURN and resumed.output == "done"
+
+
+async def test_ask_deny_survives_sqlite_restart_and_still_denies(tmp_path):
+    # the pending.kind='approve' gate must survive a real process restart (sqlite) — otherwise a deny
+    # deserializes as kind='input' and silently RE-RUNS the denied tool. Regression for the recheck Important.
+    RAN.clear()
+    path = str(tmp_path / "ck.db")
+    paused = await _paused_agent(SqliteCheckpointStore(path)).run("email x")
+    assert paused.stop_reason == StopReason.PAUSED and paused.pending.kind == "approve"
+    # brand-new agent + store over the SAME file (simulate a process restart); its model continues to "done"
+    resume_agent = Agent(model=FakeModel([ModelResponse(text="done", tool_calls=[], usage=Usage())]),
+                         tools=[send_email], hooks=Hooks(pre_tool=[lambda call: PermissionDecision.ASK]),
+                         checkpointer=SqliteCheckpointStore(path))
+    resumed = await resume_agent.resume(paused.resume_token, approve=False)
+    assert resumed.stop_reason == StopReason.END_TURN and resumed.output == "done"
+    assert RAN == []          # ASK-denied tool must NOT run after restart (kind survives sqlite serialization)
