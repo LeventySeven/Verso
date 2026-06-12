@@ -27,6 +27,8 @@ class VersoSpan:
     stop_reason: str = "error"
     steps: int = 0
     usage_total: int = 0
+    usage_in: int = 0
+    usage_out: int = 0
 
     @classmethod
     async def capture(cls, agent, task: str, *, trace_id: str | None = None) -> "VersoSpan":
@@ -41,6 +43,7 @@ class VersoSpan:
                 r = ev.result
                 span.output, span.stop_reason = r.output, r.stop_reason.value
                 span.steps = r.steps
+                span.usage_in, span.usage_out = r.usage.input_tokens, r.usage.output_tokens
                 span.usage_total = r.usage.input_tokens + r.usage.output_tokens
                 span.records.append(SpanRecord(kind="stop"))
         return span
@@ -51,6 +54,10 @@ class VersoSpan:
 
     def tool_names(self) -> list[str]:
         return [r.name for r in self.records if r.kind == "tool" and r.name]
+
+    def step_pass_rate(self) -> float:
+        tools = [r for r in self.records if r.kind == "tool"]
+        return sum(1 for r in tools if r.ok is not False) / len(tools) if tools else 1.0
 
     def to_jsonl(self) -> str:
         head = {"trace_id": self.trace_id, "output": self.output, "stop_reason": self.stop_reason,

@@ -56,3 +56,13 @@ class Eval:
         report = UnitReport()
         report.scores[span.trace_id] = {a.name: a.score(span) for a in assertions}
         return report
+
+    @staticmethod
+    async def judge(*, agent_factory, cases: dict[str, str], panel) -> UnitReport:
+        """Run the agent over the matrix and score each capture with a JudgePanel (the LLM-critique
+        tier — use where deterministic Assertions can't express the criterion). Post-hoc only."""
+        report = UnitReport()
+        for case_name, task in cases.items():
+            span = await VersoSpan.capture(agent_factory(), task, trace_id=case_name)
+            report.scores[case_name] = {panel.name: await panel.score(span)}
+        return report

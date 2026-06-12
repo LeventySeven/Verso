@@ -8,8 +8,10 @@ and lazily imported; the in-process surface above needs none of them.
 """
 from verso.evals.span import VersoSpan, VersoScore, SpanRecord
 from verso.evals.suite import Eval, Assertion, UnitReport
-from verso.evals.judge import Judge, LLMJudge
+from verso.evals.judge import Judge, LLMJudge, JudgePanel
 from verso.evals.outcome import define_outcome, OutcomeResult
+from verso.evals.otel import to_otel_attrs
 
 __all__ = ["VersoSpan", "VersoScore", "SpanRecord", "Eval", "Assertion",
-           "UnitReport", "Judge", "LLMJudge", "define_outcome", "OutcomeResult"]
+           "UnitReport", "Judge", "LLMJudge", "JudgePanel", "define_outcome",
+           "OutcomeResult", "to_otel_attrs"]
