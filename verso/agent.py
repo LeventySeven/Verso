@@ -1,6 +1,6 @@
 # verso/agent.py
 from __future__ import annotations
-from typing import AsyncIterator, Sequence
+from typing import TYPE_CHECKING, AsyncIterator, Sequence
 
 from verso.context.bundle import ContextBundle
 from verso.core.loop import build_bundle, run_loop
@@ -11,16 +11,20 @@ from verso.tools.coerce import CoercionError, StructuredOutputError, coerce
 from verso.tools.tool import Tool
 from verso.types import AgentResult
 
+if TYPE_CHECKING:
+    from verso.safety.hooks import Hooks
+
 
 class Agent:
     def __init__(self, model: Model, tools: Sequence[Tool] = (), *,
                  instructions: str | None = None, max_steps: int = 25,
-                 max_context_tokens: int | None = None):
+                 max_context_tokens: int | None = None, hooks: "Hooks | None" = None):
         self.model = model
         self.tools = list(tools)
         self.instructions = instructions
         self.max_steps = max_steps
         self.max_context_tokens = max_context_tokens
+        self.hooks = hooks
 
     def inspect(self, task: str) -> ContextBundle:
         """Return the exact ContextBundle the model will receive for `task` (turn 1)."""
@@ -29,7 +33,8 @@ class Agent:
     async def _run(self, task: str) -> AgentResult:
         return await run_loop(self.model, self.tools, task, max_steps=self.max_steps,
                               instructions=self.instructions,
-                              max_context_tokens=self.max_context_tokens)
+                              max_context_tokens=self.max_context_tokens,
+                              hooks=self.hooks)
 
     async def run(self, task: str, *, output_type: type | None = None) -> AgentResult:
         result = await self._run(task)

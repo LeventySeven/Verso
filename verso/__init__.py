@@ -14,6 +14,7 @@ from verso.evals import (
     JudgePanel, to_otel_attrs,
 )
 from verso.memory import Memory, MemoryType
+from verso.safety.hooks import Hooks, PermissionDecision
 
 __version__ = "0.0.1"
 __all__ = [
@@ -26,6 +27,7 @@ __all__ = [
     "Eval", "Assertion", "VersoSpan", "VersoScore", "define_outcome", "LLMJudge",
     "JudgePanel", "to_otel_attrs",
     "Memory", "MemoryType",
+    "Hooks", "PermissionDecision",
 ]
 
 
