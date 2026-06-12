@@ -61,7 +61,8 @@ class VersoSpan:
 
     def to_jsonl(self) -> str:
         head = {"trace_id": self.trace_id, "output": self.output, "stop_reason": self.stop_reason,
-                "steps": self.steps, "usage_total": self.usage_total}
+                "steps": self.steps, "usage_total": self.usage_total,
+                "usage_in": self.usage_in, "usage_out": self.usage_out}
         lines = [json.dumps(head, sort_keys=True)]
         lines += [json.dumps(r.__dict__, sort_keys=True) for r in self.records]
         return "\n".join(lines)
@@ -72,6 +73,7 @@ class VersoSpan:
         head, recs = lines[0], lines[1:]
         return cls(trace_id=head["trace_id"], output=head["output"], stop_reason=head["stop_reason"],
                    steps=head["steps"], usage_total=head["usage_total"],
+                   usage_in=head.get("usage_in", 0), usage_out=head.get("usage_out", 0),
                    records=[SpanRecord(**r) for r in recs])
 
     def render(self) -> str:

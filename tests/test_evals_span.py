@@ -37,6 +37,9 @@ async def test_jsonl_round_trips():
     assert restored.tool_names() == span.tool_names()
     assert restored.output == span.output
     assert restored.trace_id == span.trace_id
+    # token counts (in/out split + total) must survive the round-trip (recheck fix)
+    assert (restored.usage_in, restored.usage_out, restored.usage_total) == (span.usage_in, span.usage_out, span.usage_total)
+    assert restored.usage_total == 24 and restored.usage_in == 18 and restored.usage_out == 6
 
 
 async def test_render_shows_tools_and_final():
