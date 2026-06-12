@@ -1,7 +1,7 @@
 # verso/durable/context.py
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Generic, NoReturn, TypeVar
+from typing import Generic, TypeVar
 
 T = TypeVar("T")
 
@@ -13,6 +13,7 @@ class HumanRequest:
     key: str = "default"
     tool_name: str | None = None
     tool_call_id: str | None = None
+    kind: str = "input"        # "input" = a tool asked via ctx.hitl.request; "approve" = a pre_tool ASK gate.
 
 
 class Paused(Exception):
@@ -23,10 +24,20 @@ class Paused(Exception):
 
 
 class Hitl:
-    """The human-in-the-loop handle on RunContext. `request()` pauses the run (durable) by raising
-    Paused; the loop catches it, checkpoints, and returns a PAUSED AgentResult."""
-    def request(self, prompt: str, *, key: str = "default") -> NoReturn:
-        raise Paused(HumanRequest(prompt=prompt, key=key))
+    """The human-in-the-loop handle on RunContext. On the first run `request()` raises Paused to pause
+    the durable run; on RESUME the answer is pre-loaded (via `_resolve`) and `request()` returns it, so
+    the re-running tool body continues past the call. Tools using this must be idempotent up to the
+    request (no irreversible side-effect before it) — resume re-executes the tool from the top."""
+    def __init__(self) -> None:
+        self._answers: dict[str, object] = {}
+
+    def request(self, prompt: str, *, key: str = "default"):
+        if key in self._answers:
+            return self._answers[key]            # resumed → return the human's answer
+        raise Paused(HumanRequest(prompt=prompt, key=key, kind="input"))
+
+    def _resolve(self, key: str, answer: object) -> None:
+        self._answers[key] = answer
 
 
 @dataclass
