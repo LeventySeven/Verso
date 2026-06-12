@@ -9,6 +9,7 @@ from verso.model.failover import FailoverModel, AllCandidatesFailed
 from verso.model.retry import RetryPolicy, AttemptRecord, call_with_retry
 from verso.model.errors import FailureKind, classify
 from verso.stream.events import StreamEvent, EventType
+from verso.evals import Eval, Assertion, VersoSpan, VersoScore, define_outcome, LLMJudge
 
 __version__ = "0.0.1"
 __all__ = [
@@ -18,6 +19,7 @@ __all__ = [
     "FailoverModel", "AllCandidatesFailed", "RetryPolicy", "AttemptRecord",
     "call_with_retry", "FailureKind", "classify",
     "StreamEvent", "EventType",
+    "Eval", "Assertion", "VersoSpan", "VersoScore", "define_outcome", "LLMJudge",
 ]
 
 

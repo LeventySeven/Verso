@@ -1,0 +1,802 @@
+[
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "How to Do Great Work",
+    "url": "https://paulgraham.com/greatwork.html",
+    "host": "paulgraham.com",
+    "rating": "MUST",
+    "meta": "Paul Graham · essay · long",
+    "type": "text",
+    "note": "The reframe away from hustle: problem selection beats execution skill, and morale compounds like interest — extract the part on how curiosity picks the problem for you."
+  },
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "How To Be Successful",
+    "url": "https://blog.samaltman.com/how-to-be-successful",
+    "host": "blog.samaltman.com",
+    "rating": "MUST",
+    "meta": "Sam Altman · essay · medium",
+    "type": "text",
+    "note": "The 90th-vs-99th-percentile divide needs smart AND hard work, and wealth comes from ownership not salary — note that most outliers were contrarian at exactly one moment."
+  },
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "Relentlessly Resourceful",
+    "url": "https://paulgraham.com/relres.html",
+    "host": "paulgraham.com",
+    "rating": "MUST",
+    "meta": "Paul Graham · essay · short",
+    "type": "text",
+    "note": "The surgical resourceful-vs-hapless contrast — read it as a spec for the one response pattern to train in yourself and screen for in cofounders."
+  },
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "What I Wish Someone Had Told Me",
+    "url": "https://blog.samaltman.com/what-i-wish-someone-had-told-me",
+    "host": "blog.samaltman.com",
+    "rating": "MUST",
+    "meta": "Sam Altman · essay · short",
+    "type": "text",
+    "note": "The \"inaction is insidious risk\" and \"hard thing that matters > easy thing that doesn't\" lines — use them to re-rank what you actually work on this quarter."
+  },
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "Founder Mode",
+    "url": "https://paulgraham.com/foundermode.html",
+    "host": "paulgraham.com",
+    "rating": "MUST",
+    "meta": "Paul Graham · essay · short",
+    "type": "text",
+    "note": "The gaslighting-dynamic framing — extract why your resistance to standard delegation advice is detection, not a flaw, before you scale the team."
+  },
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "Earnestness",
+    "url": "https://paulgraham.com/earnest.html",
+    "host": "paulgraham.com",
+    "rating": "STRONG",
+    "meta": "Paul Graham · essay · short",
+    "type": "text",
+    "note": "The formidable + earnest = unstoppable thesis — take the point that caring about the problem itself is an unfakeable competitive advantage."
+  },
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "How to Think for Yourself",
+    "url": "https://paulgraham.com/think.html",
+    "host": "paulgraham.com",
+    "rating": "STRONG",
+    "meta": "Paul Graham · essay · medium",
+    "type": "text",
+    "note": "The Dunning-Kruger inversion (conventional-minded people are most sure they're independent): audit your own contrarianism against the three components here."
+  },
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "Advice",
+    "url": "https://patrickcollison.com/advice",
+    "host": "patrickcollison.com",
+    "rating": "STRONG",
+    "meta": "Patrick Collison · essay · medium",
+    "type": "text",
+    "note": "Operating under uncertainty is a different skill than learning, and peer-group contamination is the silent killer — extract how to manage your input set as you scale."
+  },
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "Schlep Blindness",
+    "url": "https://paulgraham.com/schlep.html",
+    "host": "paulgraham.com",
+    "rating": "OPTIONAL",
+    "meta": "Paul Graham · essay · short",
+    "type": "text",
+    "note": "The Stripe example in full — the bias that hides the best ideas is psychological aversion to tedious work, and the schlep is the moat."
+  },
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "Do Too Much: How to be a leader",
+    "url": "https://alexw.substack.com/p/do-too-much",
+    "host": "alexw.substack.com",
+    "rating": "STRONG",
+    "meta": "Alexandr Wang · essay",
+    "type": "text",
+    "note": "His one essay on founder mentality: 'you are the upper bound for how much anyone in your company will care; too much is the right amount.' The earnestness principle operationalized at 19, with stakes."
+  },
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "Superlinear Returns",
+    "url": "https://paulgraham.com/superlinear.html",
+    "host": "paulgraham.com",
+    "rating": "STRONG",
+    "meta": "Paul Graham · essay · ~15 min",
+    "type": "text",
+    "note": "Returns at the top are exponential plus a threshold, not linear: a product half as good takes none of the market, so the safe, evenly-rewarded path is the wrong one. The practical consequence is to follow curiosity into the questions that mystify you, because that is where the uncrowded, threshold-crossing payoffs sit. A distinct lens from Great Work on why problem-selection itself is where the compounding lives."
+  },
+  {
+    "section": "🧠 The Founder Mind (high-agency, top-1%)",
+    "title": "The Right Kind of Stubborn",
+    "url": "https://paulgraham.com/persistence.html",
+    "host": "paulgraham.com",
+    "rating": "OPTIONAL",
+    "meta": "Paul Graham · essay · medium",
+    "type": "text",
+    "note": "Persistence and obstinacy look identical from outside and invert on one axis: the persistent person fixes on the goal and stays flexible on means, updating on evidence; the obstinate one fixes on the means and is driven by ego. The self-check when you hit a wall is whether the evidence still supports the goal, or only your pride does."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Why Product Sense is the only product skill that will matter in the AI age",
+    "url": "https://shreyasdoshi.substack.com/p/why-product-sense-is-the-only-product",
+    "host": "shreyasdoshi.substack.com",
+    "rating": "MUST",
+    "meta": "Shreyas Doshi · essay · medium",
+    "type": "text",
+    "note": "The five-part model (empathy, simulation, strategy, taste, creative execution) for the judgment AI won't commoditize — your defensible layer."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "How Superhuman Built an Engine to Find Product/Market Fit",
+    "url": "https://review.firstround.com/how-superhuman-built-an-engine-to-find-product-market-fit/",
+    "host": "review.firstround.com",
+    "rating": "MUST",
+    "meta": "Rahul Vohra · essay · medium",
+    "type": "text",
+    "note": "The single-question PMF survey and the four-step loop — copy this directly into Skale to make PMF measurable."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Karri Saarinen's 10 Rules for Crafting Products That Stand Out",
+    "url": "https://www.figma.com/blog/karri-saarinens-10-rules-for-crafting-products-that-stand-out/",
+    "host": "figma.com",
+    "rating": "STRONG",
+    "meta": "Karri Saarinen · essay · medium",
+    "type": "text",
+    "note": "Linear's operating manual: small connected teams, everyone owns quality, opinionated over flexible."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Product Strategy Means Saying No",
+    "url": "https://www.intercom.com/blog/product-strategy-means-saying-no/",
+    "host": "intercom.com",
+    "rating": "STRONG",
+    "meta": "Des Traynor · essay · short",
+    "type": "text",
+    "note": "The clearest short case that refusal is a product capability and every feature is a permanent liability."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Linear's Path to Product-Market Fit",
+    "url": "https://review.firstround.com/linears-path-to-product-market-fit/",
+    "host": "review.firstround.com",
+    "rating": "STRONG",
+    "meta": "Karri Saarinen · essay · medium",
+    "type": "text",
+    "note": "Building for a specific someone and refusing flexibility — why opinionated constraints make a product feel inevitable."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Know Your Customers' \"Jobs to Be Done\"",
+    "url": "https://hbr.org/2016/09/know-your-customers-jobs-to-be-done",
+    "host": "hbr.org",
+    "rating": "OPTIONAL",
+    "meta": "Clayton Christensen et al. · article · medium",
+    "type": "text",
+    "note": "The milkshake formulation — frame discovery around the functional/social/emotional job, not the feature."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Is There Such a Thing as Good Taste?",
+    "url": "https://www.paulgraham.com/goodtaste.html",
+    "host": "paulgraham.com",
+    "rating": "MUST",
+    "meta": "Paul Graham · essay",
+    "type": "text",
+    "note": "The argument the whole \"taste is real, not subjective\" claim rests on: good design has properties you can learn to see, shown by reductio."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Product vs. Feature Teams",
+    "url": "https://www.svpg.com/product-vs-feature-teams/",
+    "host": "svpg.com",
+    "rating": "MUST",
+    "meta": "Marty Cagan (SVPG) · article",
+    "type": "text",
+    "note": "The canonical short distinction the whole empowered-team model rests on: give teams problems to solve, not features to build."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Opportunity Solution Trees",
+    "url": "https://www.producttalk.org/opportunity-solution-trees/",
+    "host": "producttalk.org",
+    "rating": "STRONG",
+    "meta": "Teresa Torres · article",
+    "type": "text",
+    "note": "The written reference for the OST framework: map outcome to opportunities to solutions to testable assumptions, to keep discovery aligned with the outcome."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "How to Hire a Product Manager",
+    "url": "https://www.bringthedonuts.com/essays/productmanager.html",
+    "host": "bringthedonuts.com",
+    "rating": "MUST",
+    "meta": "Ken Norton · essay",
+    "type": "text",
+    "note": "The founding essay of modern PM hiring, still the most-cited in the field: what separates a real product manager from a project manager with a fancier title."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "The Power of Product Thinking",
+    "url": "https://future.com/product-thinking/",
+    "host": "future.com",
+    "rating": "MUST",
+    "meta": "Julie Zhuo · essay",
+    "type": "text",
+    "note": "Product thinking as a trainable skill — knowing what makes a product useful and loved — worked backward from human behavior, with the Facebook Reactions case study."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "What's Your Shape? A 12-competency model for product leaders",
+    "url": "https://www.ravi-mehta.com/product-manager-roles/",
+    "host": "ravi-mehta.com",
+    "rating": "STRONG",
+    "meta": "Ravi Mehta (ex-CPO Tinder) · essay",
+    "type": "text",
+    "note": "The most rigorous public model for diagnosing a product leader's strengths and gaps, and the 'spiky vs round' insight: elite leaders are pointy and hire to cover the rest."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "How to develop product sense",
+    "url": "https://www.lennysnewsletter.com/p/product-sense",
+    "host": "lennysnewsletter.com",
+    "rating": "STRONG",
+    "meta": "Jules Walter (YouTube, Slack) · essay",
+    "type": "text",
+    "note": "The how-to companion to Shreyas's product-sense essay: four concrete, trainable mechanisms for building product sense, with real YouTube and Slack examples."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Malleable Software: Restoring User Agency in a World of Locked-Down Apps",
+    "url": "https://www.inkandswitch.com/essay/malleable-software/",
+    "host": "inkandswitch.com",
+    "rating": "MUST",
+    "meta": "Geoffrey Litt et al. (Ink & Switch) · essay · ~35 min",
+    "type": "text",
+    "note": "The research lab that actually ships these prototypes arguing the unit to dispense with is 'the application' itself: software you reshape to fit your work, backed by working systems rather than slideware. It reframes what is worth building 18 months out, tools users mold instead of products they consume."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Why Chatbots Are Not the Future",
+    "url": "https://wattenberger.com/thoughts/boo-chatbots/",
+    "host": "wattenberger.com",
+    "rating": "STRONG",
+    "meta": "Amelia Wattenberger · essay · ~2k words + demos",
+    "type": "text",
+    "note": "The affordances argument with live demos: a bare text box signals nothing about what the tool can do and forces constant switching between deciding and evaluating, which kills flow. The canonical statement of the anti-chat case, from someone who builds the interfaces."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Squish Meets Structure: Designing with Language Models",
+    "url": "https://maggieappleton.com/squish-structure",
+    "host": "maggieappleton.com",
+    "rating": "STRONG",
+    "meta": "Maggie Appleton · essay · ~30 min",
+    "type": "text",
+    "note": "A design framework, not a chat critique: treat language models as squishy systems and find the Goldilocks zone by constraining them into small, observable reasoning steps instead of one magic box that overpromises. The build-around-probabilism model that most later anti-chatbot takes are downstream of."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "A Field Guide to Rapidly Improving AI Products",
+    "url": "https://hamel.dev/blog/posts/field-guide/",
+    "host": "hamel.dev",
+    "rating": "STRONG",
+    "meta": "Hamel Husain · essay · ~6k words",
+    "type": "text",
+    "note": "From 30+ production builds: the teams that win barely discuss tools and obsess over measurement, you start from bottom-up error analysis not off-the-shelf metrics (one client's core bug was date-handling failing 66% of the time, invisible to generic scores), and the custom data viewer is the highest-leverage thing you build. Distinct from his 'Your AI Product Needs Evals' (why) — this is the operating manual (how)."
+  },
+  {
+    "section": "🎯 Product Taste (the CPO half)",
+    "title": "Product Judgment: How some people repeatedly create product success",
+    "url": "https://www.intercom.com/blog/product-judgment/",
+    "host": "intercom.com",
+    "rating": "STRONG",
+    "meta": "Paul Adams (CPO, Intercom) · essay · ~20 min",
+    "type": "text",
+    "note": "Intercom's CPO on the uncomfortable claim the trainability essays skip: product judgment is domain-specific and does not transfer. He went from YouTube and Gmail to B2B with zero judgment in the new domain and rebuilt it only by talking to 100+ customers for competence and 1,000+ for proficiency (reports and recordings do not count), with a three-rates-of-change model for which judgment ages well."
+  },
+  {
+    "section": "🎨 Design & UX Taste (great vs slop)",
+    "title": "Invisible Details of Interaction Design",
+    "url": "https://rauno.me/craft/interaction-design",
+    "host": "rauno.me",
+    "rating": "MUST",
+    "meta": "Rauno Freiberg · essay · medium",
+    "type": "text",
+    "note": "The named mechanisms (physics, gesture responsiveness, contextual affordances) behind the \"magic\" feeling — use it as a checklist of decisions you're currently leaving on defaults."
+  },
+  {
+    "section": "🎨 Design & UX Taste (great vs slop)",
+    "title": "Great Animations",
+    "url": "https://emilkowal.ski/ui/great-animations",
+    "host": "emilkowal.ski",
+    "rating": "MUST",
+    "meta": "Emil Kowalski · essay · medium",
+    "type": "text",
+    "note": "The six-test filter for motion that earns its place vs motion that's decoration — apply \"purpose\" and \"interruptible\" to every Skale animation."
+  },
+  {
+    "section": "🎨 Design & UX Taste (great vs slop)",
+    "title": "Jiro's Dream",
+    "url": "https://karrisaarinen.com/jiro/",
+    "host": "karrisaarinen.com",
+    "rating": "STRONG",
+    "meta": "Karri Saarinen · essay · short",
+    "type": "text",
+    "note": "The ur-argument that taste is a learnable, transferable palate you build by consuming great work — read it once a quarter."
+  },
+  {
+    "section": "🎨 Design & UX Taste (great vs slop)",
+    "title": "How We Redesigned the Linear UI",
+    "url": "https://linear.app/now/how-we-redesigned-the-linear-ui",
+    "host": "linear.app",
+    "rating": "STRONG",
+    "meta": "Karri Saarinen et al. · article · medium",
+    "type": "text",
+    "note": "The surgical decision log: LCH color migration, 98→3 color variables, Inter Display for hierarchy — a rare live narration of taste trade-offs."
+  },
+  {
+    "section": "🎨 Design & UX Taste (great vs slop)",
+    "title": "Design Engineering at Vercel",
+    "url": "https://vercel.com/blog/design-engineering-at-vercel",
+    "host": "vercel.com",
+    "rating": "STRONG",
+    "meta": "Vercel Design Team · article · medium",
+    "type": "text",
+    "note": "The definition of design engineering as one discipline (perf + a11y + polish), not a designer-to-engineer handoff — your structural advantage as a solo CTO."
+  },
+  {
+    "section": "🎨 Design & UX Taste (great vs slop)",
+    "title": "Apple Human Interface Guidelines",
+    "url": "https://developer.apple.com/design/human-interface-guidelines",
+    "host": "developer.apple.com",
+    "rating": "OPTIONAL",
+    "meta": "Apple · reference · long",
+    "type": "text",
+    "note": "Read it for the perceptual reasoning behind metaphor, feedback, and direct manipulation — not as a checklist, as the \"why apps that ignore this feel wrong.\""
+  },
+  {
+    "section": "🎨 Design & UX Taste (great vs slop)",
+    "title": "Web Interface Guidelines",
+    "url": "https://github.com/raunofreiberg/interfaces",
+    "host": "github.com",
+    "rating": "STRONG",
+    "meta": "Rauno Freiberg · repo · checklist",
+    "type": "text",
+    "note": "A version-controlled checklist of the implementation-level calls a model leaves on defaults: fade-and-scale dialogs from ~0.8 not 0, press buttons to ~0.96, tabular-nums so timers and number columns do not reflow, 16px input font to stop iOS zoom, pause off-screen loops, no dead zones between list items. The literal operationalization of this section's thesis that great-versus-slop is a thousand small decisions no model makes for you."
+  },
+  {
+    "section": "💰 B2B Go-To-Market (founder-led sales)",
+    "title": "Do Things That Don't Scale",
+    "url": "https://paulgraham.com/ds.html",
+    "host": "paulgraham.com",
+    "rating": "MUST",
+    "meta": "Paul Graham · essay · ~20 min",
+    "type": "text",
+    "note": "The primary-source argument for why your first 100 customers come through you by hand, not through automation or a funnel."
+  },
+  {
+    "section": "💰 B2B Go-To-Market (founder-led sales)",
+    "title": "Finding Language/Market Fit",
+    "url": "https://review.firstround.com/finding-language-market-fit-how-to-make-customers-feel-like-youve-read-their-minds/",
+    "host": "review.firstround.com",
+    "rating": "STRONG",
+    "meta": "Matt Lerner (ex-PayPal) · essay · ~20 min",
+    "type": "text",
+    "note": "Use ad-copy tests to find the exact words that make X founders feel read before you touch the product."
+  },
+  {
+    "section": "💰 B2B Go-To-Market (founder-led sales)",
+    "title": "How to Win Your First 10 B2B Customers",
+    "url": "https://www.lennysnewsletter.com/p/how-to-win-your-first-10-b2b-customers",
+    "host": "lennysnewsletter.com",
+    "rating": "STRONG",
+    "meta": "Lenny Rachitsky · essay · ~20 min",
+    "type": "text",
+    "note": "Follow the channel sequence (network → cold outbound → investors' networks → communities) synthesized from 20+ founders including Vanta and Figma."
+  },
+  {
+    "section": "💰 B2B Go-To-Market (founder-led sales)",
+    "title": "How Today's Fastest Growing B2B Businesses Found Their First Ten Customers",
+    "url": "https://www.lennysnewsletter.com/p/how-todays-fastest-growing-b2b-businesses",
+    "host": "lennysnewsletter.com",
+    "rating": "STRONG",
+    "meta": "Lenny Rachitsky · essay · ~20 min",
+    "type": "text",
+    "note": "Read the primary first-customer tactics from Stripe, Slack, and Plaid alongside the newer version for the full pattern."
+  },
+  {
+    "section": "💰 B2B Go-To-Market (founder-led sales)",
+    "title": "The SaaS Org Chart",
+    "url": "https://sacks.substack.com/p/the-saas-org-chart",
+    "host": "sacks.substack.com",
+    "rating": "STRONG",
+    "meta": "David Sacks (Craft Ventures) · essay · ~15 min",
+    "type": "text",
+    "note": "Use the seed→A→B hiring map to avoid hiring a VP of Sales before you personally have a repeatable close."
+  },
+  {
+    "section": "💰 B2B Go-To-Market (founder-led sales)",
+    "title": "Growth+Sales: The New Era of Enterprise Go-to-Market",
+    "url": "https://a16z.com/growthsales-the-new-era-of-enterprise-go-to-market/",
+    "host": "a16z.com",
+    "rating": "OPTIONAL",
+    "meta": "Peter Lauten & Martin Casado (a16z) · essay · ~20 min",
+    "type": "text",
+    "note": "Consciously pick or reject the PLG + top-down dual motion, and learn its six failure modes, before Series A."
+  },
+  {
+    "section": "💰 B2B Go-To-Market (founder-led sales)",
+    "title": "AMA with Steli Efti — Pricing, Selling, and Building Sales Teams",
+    "url": "https://stripe.com/guides/atlas/ama-steli-efti",
+    "host": "stripe.com",
+    "rating": "OPTIONAL",
+    "meta": "Steli Efti (Close.com) · article · ~30 min",
+    "type": "text",
+    "note": "Get the practitioner answers on when to start charging, how to write a cold email that gets replies, and when to fire a customer."
+  },
+  {
+    "section": "💰 B2B Go-To-Market (founder-led sales)",
+    "title": "How I've approached founder-led sales",
+    "url": "https://www.kracov.co/writing/founder-sales",
+    "host": "kracov.co",
+    "rating": "STRONG",
+    "meta": "Alex Kracov (Dock CEO) · essay · ~12 min",
+    "type": "text",
+    "note": "The granular call mechanics the funnel-level pieces skip, from Lattice's #3 turned Dock CEO: reframe the early call as a feedback call so the objective is fixing the product, run a 25-minute anatomy (founding story and qualify, demo with question breaks, next steps), close by building the prospect's space from their own collateral, make a pilot the goal, and keep a deliberately minimal CRM so speed beats data hygiene."
+  },
+  {
+    "section": "💰 B2B Go-To-Market (founder-led sales)",
+    "title": "Five ways to build a $100 million business",
+    "url": "http://christophjanz.blogspot.com/2014/10/five-ways-to-build-100-million-business.html",
+    "host": "christophjanz.blogspot.com",
+    "rating": "STRONG",
+    "meta": "Christoph Janz (Point Nine) · essay · ~10 min",
+    "type": "text",
+    "note": "The five customer animals (elephants, deer, rabbits, mice, flies): your average revenue per account dictates the entire GTM machine, so $100M means either ~1,000 elephants at $100k+ via high-touch sales or ~100,000 rabbits at $1k via self-serve inbound. The upstream decision that determines whether founder-led enterprise sales even applies to you, before any first-call tactic matters."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "The Cold Start Problem",
+    "url": "https://a16z.com/books/the-cold-start-problem/",
+    "host": "a16z.com",
+    "rating": "MUST",
+    "meta": "Andrew Chen · book · ~350pp",
+    "type": "text",
+    "note": "Use the atomic-network → tipping-point → escape-velocity taxonomy to diagnose which stage Skale is actually in, so you stop running wrong-stage tactics."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "Growth Loops are the New Funnels",
+    "url": "https://www.reforge.com/blog/growth-loops",
+    "host": "reforge.com",
+    "rating": "MUST",
+    "meta": "Brian Balfour, Casey Winters, Kevin Kwok, Andrew Chen · essay · ~20min",
+    "type": "text",
+    "note": "Re-architect Skale's growth as a self-reinforcing loop so CAC compounds down instead of leaking out of a funnel."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "How the biggest consumer apps got their first 1,000 users",
+    "url": "https://www.lennysnewsletter.com/p/how-the-biggest-consumer-apps-got",
+    "host": "lennysnewsletter.com",
+    "rating": "MUST",
+    "meta": "Lenny Rachitsky · essay · ~25min",
+    "type": "text",
+    "note": "The data that gives you permission to bet everything on one channel: most winners used exactly one."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "Braindump on Viral Loops",
+    "url": "https://andrewchen.substack.com/p/braindump-on-viral-loops",
+    "host": "andrewchen.substack.com",
+    "rating": "MUST",
+    "meta": "Andrew Chen · essay · ~20min",
+    "type": "text",
+    "note": "The retention-drives-K math that tells you to fix churn before optimizing your viral coefficient."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "In Consumer AI, Momentum Is the Moat",
+    "url": "https://a16z.com/momentum-as-ai-moat/",
+    "host": "a16z.com",
+    "rating": "STRONG",
+    "meta": "Bryan Kim (a16z) · essay · ~12min",
+    "type": "text",
+    "note": "The distribution-velocity-as-moat thesis: whoever runs ship-distribute-iterate fastest pulls away, because feature moats evaporate."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "Come for the Tool, Stay for the Network",
+    "url": "https://cdixon.org/2015/01/31/come-for-the-tool-stay-for-the-network/",
+    "host": "cdixon.org",
+    "rating": "STRONG",
+    "meta": "Chris Dixon · essay · ~6min",
+    "type": "text",
+    "note": "The exact sequencing for getting single-player utility to critical mass before the network layer matters."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "Notes on Superhuman's Acquisition Loops",
+    "url": "https://kwokchain.com/2019/10/24/notes-on-superhumans-acquisition-loops/",
+    "host": "kwokchain.com",
+    "rating": "STRONG",
+    "meta": "Kevin Kwok · essay · ~25min",
+    "type": "text",
+    "note": "How to design a bragging-rights loop where users proselytize for status, not utility."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "Growth Hacker is the New VP Marketing",
+    "url": "https://andrewchen.com/how-to-be-a-growth-hacker-an-airbnbcraigslist-case-study/",
+    "host": "andrewchen.com",
+    "rating": "STRONG",
+    "meta": "Andrew Chen · essay · ~10min",
+    "type": "text",
+    "note": "The \"where do my users already congregate\" mental model, via the canonical Airbnb/Craigslist hack."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "Bootstrapping Side Projects into Profitable Startups",
+    "url": "https://levels.io/bootstrapping/",
+    "host": "levels.io",
+    "rating": "OPTIONAL",
+    "meta": "Pieter Levels · essay · ~20min",
+    "type": "text",
+    "note": "The build-in-public + niche-community + product-is-the-marketing playbook from someone who did it solo with zero ad spend."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "How to Launch a Dev Tool on Hacker News",
+    "url": "https://www.markepear.dev/blog/dev-tool-hacker-news-launch",
+    "host": "markepear.dev",
+    "rating": "STRONG",
+    "meta": "Jakub Czakon · essay",
+    "type": "text",
+    "note": "The tactical Show HN playbook for technical products: title framing, timing, and priming engagers without vote-begging."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "My Solopreneur Story: Zero to $45K/mo",
+    "url": "https://news.tonydinh.com/p/my-solopreneur-story-zero-to-45kmo",
+    "host": "news.tonydinh.com",
+    "rating": "STRONG",
+    "meta": "Tony Dinh · essay",
+    "type": "text",
+    "note": "The exact \"build an X audience first, then launch into a 1,000-person invite gate\" loop — your channel, your move."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "The Stair Step Method of Bootstrapping",
+    "url": "https://robwalling.com/essays/2015/03/26/the-stair-step-method-of-bootstrapping",
+    "host": "robwalling.com",
+    "rating": "OPTIONAL",
+    "meta": "Rob Walling · essay",
+    "type": "text",
+    "note": "Start inside an existing ecosystem (app store, plugin directory) for built-in distribution before going standalone."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "Four Fits For $100M+ Growth",
+    "url": "https://brianbalfour.com/four-fits-growth-framework",
+    "host": "brianbalfour.com",
+    "rating": "MUST",
+    "meta": "Brian Balfour · essay · ~25 min",
+    "type": "text",
+    "note": "The directionality most people get backwards: products are built to fit channels, channels never mold to products, and your revenue model decides which channels are even available before you spend a dollar. The four-fit framework (Market/Product, Product/Channel, Channel/Model, Model/Market) turns 'pick one channel' from a guess into a deductible decision."
+  },
+  {
+    "section": "📈 Distribution & Growth (B2C + launch-in-hours)",
+    "title": "Invisible Asymptotes",
+    "url": "https://www.eugenewei.com/blog/2018/5/21/invisible-asymptotes",
+    "host": "eugenewei.com",
+    "rating": "STRONG",
+    "meta": "Eugene Wei · essay · ~30 min",
+    "type": "text",
+    "note": "Amazon's first strategic-planning analyst on how to find the hidden ceiling every growth curve hits: interrogate the people who do not buy, not your fans. At Amazon the asymptote was shipping-fee hatred, and the fix was Prime. The companion to momentum-as-moat, because it names what kills momentum before the curve flattens."
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "How to Get Rich (without getting lucky)",
+    "url": "https://nav.al/rich",
+    "host": "nav.al",
+    "rating": "MUST",
+    "meta": "Naval Ravikant · essay · ~30 min",
+    "type": "text",
+    "note": "The leverage taxonomy (labor/capital/code/media) that explains why a technical founder with an X audience is a different category of person — map your Rust + multi-agent + SaaS stack directly onto \"specific knowledge + code + permissionless media.\""
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "Most Human Wins",
+    "url": "https://www.notboring.co/p/most-human-wins",
+    "host": "notboring.co",
+    "rating": "MUST",
+    "meta": "Packy McCormick · essay · ~20 min",
+    "type": "text",
+    "note": "The 2025 answer to \"everyone has Codex\": taste, judgment, and embodied reputation are the moat, not speed of output — read it as your positioning brief for not becoming a wrapper."
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "1,000 True Fans",
+    "url": "https://kk.org/thetechnium/1000-true-fans/",
+    "host": "kk.org",
+    "rating": "MUST",
+    "meta": "Kevin Kelly · essay · ~15 min",
+    "type": "text",
+    "note": "The proof you need ~1K paying advocates, not mass reach — reframe X from vanity metrics to building the exact 1K who'll pre-buy Lancelot and seed skale-brain."
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "Spiky Point of View: Let's Get a Little Controversial",
+    "url": "https://www.weskao.com/blog/spiky-point-of-view-lets-get-a-little-controversial",
+    "host": "weskao.com",
+    "rating": "STRONG",
+    "meta": "Wes Kao · essay · ~12 min",
+    "type": "text",
+    "note": "The single tactic that separates compounding founder accounts from stagnant ones — turn your benchmark numbers and architecture opinions into a defensible spiky stance."
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "The Ultimate Guide to Writing Online",
+    "url": "https://perell.com/essay/the-ultimate-guide-to-writing-online/",
+    "host": "perell.com",
+    "rating": "STRONG",
+    "meta": "David Perell · essay · ~40 min",
+    "type": "text",
+    "note": "The Personal Monopoly concept — how \"Rust framework + AI agent ops + Central Asian operator\" becomes a magnet instead of noise."
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "How Would You Build an Audience from Scratch in 2024?",
+    "url": "https://www.shaanpuri.com/mailbag/how-would-you-build-an-audience-from-scratch-in-2024",
+    "host": "shaanpuri.com",
+    "rating": "STRONG",
+    "meta": "Shaan Puri · essay · ~15 min",
+    "type": "text",
+    "note": "Nine non-obvious lessons from 500K+ followers — the core one: build the magnet for WHO you want, because who follows you beats how many."
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "MAKE: The Indie Maker Blueprint",
+    "url": "https://readmake.com/",
+    "host": "readmake.com",
+    "rating": "STRONG",
+    "meta": "Pieter Levels · book · ~4 hr",
+    "type": "text",
+    "note": "The operational bible for shipping solo with X as the product itself — read the revenue-transparency-as-distribution section first."
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "Don't Call Yourself A Programmer, And Other Career Advice",
+    "url": "https://www.kalzumeus.com/2011/10/28/dont-call-yourself-a-programmer/",
+    "host": "kalzumeus.com",
+    "rating": "OPTIONAL",
+    "meta": "Patrick McKenzie · essay · ~30 min",
+    "type": "text",
+    "note": "The reframe that you sell outcomes, not skills — the framing discipline to apply to every post about Lancelot and Skale."
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "Reflecting on My Failure to Build a Billion-Dollar Company",
+    "url": "https://sahillavingia.com/reflecting",
+    "host": "sahillavingia.com",
+    "rating": "OPTIONAL",
+    "meta": "Sahil Lavingia · essay · ~15 min",
+    "type": "text",
+    "note": "Proof that radical honesty about real numbers is the highest-signal founder content — the template for your own build-in-public posts."
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "Status as a Service",
+    "url": "https://www.eugenewei.com/blog/2019/2/19/status-as-a-service",
+    "host": "eugenewei.com",
+    "rating": "STRONG",
+    "meta": "Eugene Wei · essay",
+    "type": "text",
+    "note": "Why X mechanically rewards high-effort technical posting: social networks are status games, and early \"proof of work\" earns outsized social capital. The mechanism under the tactics."
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "Don't End The Week With Nothing",
+    "url": "https://training.kalzumeus.com/newsletters/archive/do-not-end-the-week-with-nothing",
+    "host": "training.kalzumeus.com",
+    "rating": "STRONG",
+    "meta": "Patrick McKenzie (patio11) · essay · ~25 min",
+    "type": "text",
+    "note": "Structure each week to finish owning a portable, compounding asset (a shipped artifact, a public reputation, a narrative you control) instead of an even hour-for-pay swap your employer keeps. The career-capital half of this section's title, made operational: prefer visible work, build reputation outside the employer, ship things you own."
+  },
+  {
+    "section": "🧲 Leverage & Becoming Hunted (X + career capital)",
+    "title": "Work with the garage door up",
+    "url": "https://notes.andymatuschak.org/Work_with_the_garage_door_up",
+    "host": "notes.andymatuschak.org",
+    "rating": "STRONG",
+    "meta": "Andy Matuschak · essay · ~4 min",
+    "type": "text",
+    "note": "The person who coined the phrase on what building in public actually means: expose half-finished process and open problems, not polished launch posts, because the in-progress work is what builds an invested following and surfaces collaborators. Four minutes that reframe it from marketing toward thinking."
+  },
+  {
+    "section": "🏛️ The YC / a16z Game (top 1%, not top 90%)",
+    "title": "How to Raise Money",
+    "url": "https://paulgraham.com/fr.html",
+    "host": "paulgraham.com",
+    "rating": "MUST",
+    "meta": "Paul Graham · essay · long",
+    "type": "text",
+    "note": "The breadth-first, parallel-process mechanism that stops investors from stringing you along; the thing you otherwise only learn after getting burned."
+  },
+  {
+    "section": "🏛️ The YC / a16z Game (top 1%, not top 90%)",
+    "title": "Raising Capital: This Is the Advice We Give Our Founders",
+    "url": "https://a16z.com/raising-capital-this-is-the-advice-we-give-our-founders/",
+    "host": "a16z.com",
+    "rating": "MUST",
+    "meta": "Jamie McGurk, Steve McDermid · essay · medium",
+    "type": "text",
+    "note": "The inside-a16z playbook on engineering competitive processes and optimizing terms over valuation — straight from the firm."
+  },
+  {
+    "section": "🏛️ The YC / a16z Game (top 1%, not top 90%)",
+    "title": "Requests for Startups",
+    "url": "https://www.ycombinator.com/rfs",
+    "host": "ycombinator.com",
+    "rating": "STRONG",
+    "meta": "Y Combinator · tool · short",
+    "type": "text",
+    "note": "The live map of where YC wants to deploy now (AI-native services, company brain, inference chips for agents) — read it so your frame matches current partner appetite."
+  },
+  {
+    "section": "🏛️ The YC / a16z Game (top 1%, not top 90%)",
+    "title": "What We Look for In Applications",
+    "url": "https://speedrun.substack.com/p/what-we-look-for-in-applications",
+    "host": "speedrun.substack.com",
+    "rating": "STRONG",
+    "meta": "a16z speedrun partners · essay · medium",
+    "type": "text",
+    "note": "Multiple partners on record: signals of exceptionality, co-founders with shared reps, and velocity over traction — maps directly to Series A taste upstream."
+  },
+  {
+    "section": "🏛️ The YC / a16z Game (top 1%, not top 90%)",
+    "title": "Garry Tan on the Past, Present, and Future of YC",
+    "url": "https://www.thespl.it/p/garry-tan-on-the-past-present-and",
+    "host": "thespl.it",
+    "rating": "STRONG",
+    "meta": "Garry Tan / Turner Novak · article · long",
+    "type": "text",
+    "note": "Dense operational detail: interview criteria, co-founder conflict as the #1 failure driver, Demo Day mechanics, and the Airbnb 10%-weekly-growth template."
+  },
+  {
+    "section": "🏛️ The YC / a16z Game (top 1%, not top 90%)",
+    "title": "16 Common Questions About Fundraising",
+    "url": "https://a16z.com/16-common-questions-about-fundraising/",
+    "host": "a16z.com",
+    "rating": "STRONG",
+    "meta": "Andreessen Horowitz · essay · medium",
+    "type": "text",
+    "note": "The non-obvious answer on timing: raise when you have narrative momentum, not when you need the cash."
+  },
+  {
+    "section": "🏛️ The YC / a16z Game (top 1%, not top 90%)",
+    "title": "How to Raise a Successful VC Round",
+    "url": "https://blog.eladgil.com/p/tactics-for-how-to-raise-vc-round-or",
+    "host": "blog.eladgil.com",
+    "rating": "STRONG",
+    "meta": "Elad Gil · essay",
+    "type": "text",
+    "note": "The tactical raise mechanics PG's macro essay leaves out: compress meetings into a tight window, don't name other investors until you hold a term sheet, target a partner not a firm."
+  },
+  {
+    "section": "🏛️ The YC / a16z Game (top 1%, not top 90%)",
+    "title": "Your Pitch Deck Isn't Enough",
+    "url": "https://speedrun.substack.com/p/your-pitch-deck-isnt-enough",
+    "host": "speedrun.substack.com",
+    "rating": "STRONG",
+    "meta": "Troy Kirwin (a16z speedrun) · essay · medium",
+    "type": "text",
+    "note": "A sitting a16z partner on the move most founders miss: the partner you pitch still has to sell the deal internally, so writing your own investment memo lowers their cost to champion you and gets you advanced. It also rescues the rigorous founder who loses in live meetings. Optimize the memo first, derive the deck from it."
+  }
+]

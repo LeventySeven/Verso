@@ -1,5 +1,6 @@
 from verso import Agent, tool
 from verso.evals.suite import Eval, Assertion
+from verso.evals.span import VersoSpan
 from verso.model.fake import FakeModel
 from verso.model.base import ModelResponse, ToolCall
 from verso.types import Usage
@@ -48,3 +49,15 @@ async def test_pass_k_reports_distribution_not_a_point():
     # reliability is a distribution: run the same case k times, report the pass rate.
     rate = await Eval.pass_k(lambda: _agent(), "add 1 and 2", answered_3, k=5)
     assert rate == 1.0
+
+
+# --- appended: incident -> regression ---
+
+
+def test_from_trace_replays_a_saved_span_into_an_assertion():
+    # A captured production failure IS a span; freeze it into the permanent suite.
+    failed = VersoSpan(trace_id="incident-42", output="seven", stop_reason="end_turn", steps=1)
+    jsonl = failed.to_jsonl()
+    report = Eval.from_trace(VersoSpan.from_jsonl(jsonl), [answered_3])
+    assert not report.passed                       # the regression reproduces the failure
+    assert "incident-42" in report.scores

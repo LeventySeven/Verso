@@ -48,3 +48,11 @@ class Eval:
             span = await VersoSpan.capture(agent_factory(), task, trace_id=f"k{i}")
             passes += int(assertion.score(span).passed)
         return passes / k
+
+    @staticmethod
+    def from_trace(span: VersoSpan, assertions: list[Assertion]) -> UnitReport:
+        """incident -> regression: score a *captured* span (a real past run, e.g. a production
+        failure loaded from JSONL) against assertions. The accreting corpus of these IS the moat."""
+        report = UnitReport()
+        report.scores[span.trace_id] = {a.name: a.score(span) for a in assertions}
+        return report

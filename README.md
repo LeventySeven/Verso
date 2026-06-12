@@ -90,6 +90,20 @@ async for frame in sse(agent.stream("...")):   # 'data: {json}\n\n' ... 'data: [
     ...
 ```
 
+**Evals in the box** — the wedge no framework ships. Assertions are deterministic (preferred);
+the LLM judge is the fallback. Evals run the *real* agent (prod == eval):
+
+```python
+from verso import Eval, Assertion, define_outcome
+
+called_tool = Assertion("used_search", lambda s: "search" in s.tool_names())
+report = await Eval.unit(agent_factory=lambda: agent, cases={"q1": "..."}, assertions=[called_tool])
+rate = await Eval.pass_k(lambda: agent, "...", called_tool, k=5)     # reliability is a distribution
+
+# a captured production failure IS a regression test:
+Eval.from_trace(VersoSpan.from_jsonl(open("incident-42.jsonl").read()), [called_tool])
+```
+
 ## Status
 
 Design-locked, pre-implementation. The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**.

@@ -7,6 +7,7 @@ dependencies = ["pydantic>=2.7", "anthropic>=0.40"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.6"]
+evals = ["langfuse>=2", "autoevals>=0.0.100", "braintrust>=0.0.150"]
 
 [build-system]
 requires = ["hatchling"]
