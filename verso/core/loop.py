@@ -85,6 +85,15 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
                 elif decision == PermissionDecision.ASK and ctx is not None and ctx.store is not None:
                     pending = HumanRequest(prompt=f"Approve tool '{tc.name}' with args {tc.arguments}?",
                                            tool_name=tc.name, tool_call_id=tc.id)
+                    # keep the checkpoint well-formed: sibling tool_calls in this turn that haven't run
+                    # won't run before resume — give each a deferred result so the assistant turn carries
+                    # no unmatched tool_use block (which a real provider would reject on resume).
+                    done_ids = {m.tool_call_id for m in bundle.history if m.role == "tool"}
+                    for sib in resp.tool_calls:
+                        if sib.id != tc.id and sib.id not in done_ids:
+                            bundle.history.append(Message(
+                                role="tool", tool_call_id=sib.id, name=sib.name,
+                                content=f"Tool '{sib.name}' was deferred pending human approval of '{tc.name}'."))
                     _checkpoint(ctx, bundle, task, usage, step, pending=pending)
                     paused = AgentResult(output="", stop_reason=StopReason.PAUSED, usage=usage, steps=step,
                                          resume_token=ctx.trace_id, pending=pending)
