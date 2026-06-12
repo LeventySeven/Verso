@@ -64,5 +64,6 @@ class Agent:
     async def stream(self, task: str) -> AsyncIterator[StreamEvent]:
         async for ev in run_stream(self.model, self.tools, task, max_steps=self.max_steps,
                                    instructions=self.instructions,
-                                   max_context_tokens=self.max_context_tokens):
+                                   max_context_tokens=self.max_context_tokens,
+                                   hooks=self.hooks):
             yield ev
