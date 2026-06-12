@@ -48,6 +48,16 @@ def test_bounded_evicts_oldest_past_cap():
     assert b.count() == 3                                # bounded by default
 
 
+def test_recall_query_with_fts_operator_words_is_literal_not_syntax():
+    # LLM recall queries can contain FTS5 operator barewords (AND/OR/NOT/NEAR); each must be matched
+    # as a literal term, not parsed as an operator — otherwise FTS5 raises sqlite3.OperationalError.
+    b = _backend()
+    b.add(_rec("a", "Smith and Wesson revolver"))
+    b.add(_rec("b", "unrelated strawberry cake"))
+    hits = b.search("Smith AND Wesson", embedding=HashEmbedder(128).embed("Smith AND Wesson"), now=200.0)
+    assert hits and hits[0].id == "a"                    # no crash; operator words matched as literals
+
+
 def test_search_after_eviction_returns_only_survivors():
     # eviction DELETEs from `memory`; the memory_ad trigger must drop the evicted rows' FTS terms too,
     # otherwise stale rowids linger in the index. Search must surface survivors and never an evicted record.

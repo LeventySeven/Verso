@@ -82,7 +82,8 @@ class SqliteBackend:
 
 def _fts_query(q: str) -> str:
     terms = [t for t in "".join(c if c.isalnum() else " " for c in q).split() if t]
-    return " OR ".join(terms) or '""'
+    # quote each (alphanumeric) term so FTS5 reads it as a literal, never an OR/AND/NOT/NEAR operator.
+    return " OR ".join(f'"{t}"' for t in terms) or '""'
 
 
 def _to_record(row) -> MemoryRecord:
