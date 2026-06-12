@@ -1,5 +1,6 @@
 # verso/memory/store.py
 from __future__ import annotations
+import inspect
 import time
 import uuid
 from typing import Callable
@@ -45,3 +46,22 @@ class Memory:
     async def recall_as_of(self, query: str, *, as_of: float, k: int = 10) -> list[MemoryRecord]:
         return self.backend.search(query, embedding=self.embedder.embed(query), now=as_of,
                                    scope=self.scope, k=k, as_of=as_of)
+
+    async def reflect(self, reflector: Callable[[list[str]], object], *, trigger_n: int = 100,
+                      target_type: MemoryType = MemoryType.FACT, importance: float = 0.8,
+                      limit: int = 1000) -> list[str]:
+        """Consolidate accumulated episodic memories into durable FACT/PROCEDURAL knowledge — the step
+        that makes memory compound (§5.4). Gather live episodics, hand their contents to `reflector`
+        (an LLM or a deterministic fn → derived statements), store each as a `target_type` memory, and
+        invalidate the consolidated sources (ADD-only: never deleted). A no-op until `trigger_n`
+        episodics have accumulated (pass trigger_n=0 to force). `reflector` may be sync or async."""
+        episodics = self.backend.recent(scope=self.scope, types=[MemoryType.EPISODIC], limit=limit)
+        if not episodics or len(episodics) < trigger_n:
+            return []
+        out = reflector([r.content for r in episodics])
+        derived = await out if inspect.isawaitable(out) else out
+        ids = [await self.remember(d, type=target_type, importance=importance) for d in derived]
+        at = self.clock()
+        for r in episodics:
+            self.backend.invalidate(r.id, at)              # sources consolidated → invalidated, never deleted
+        return ids

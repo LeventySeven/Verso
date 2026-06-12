@@ -44,6 +44,17 @@ class SqliteBackend:
     def count(self) -> int:
         return self.db.execute("SELECT COUNT(*) c FROM memory").fetchone()["c"]
 
+    def recent(self, *, scope="default", types=None, limit=100):
+        # most-recent LIVE (non-invalidated) records of the given types — the consolidation feed for reflect().
+        q = "SELECT rowid,* FROM memory WHERE scope=? AND invalid_at IS NULL"
+        params: list = [scope]
+        if types:
+            q += " AND type IN (%s)" % ",".join("?" * len(types))
+            params += [t.value for t in types]
+        q += " ORDER BY valid_at DESC LIMIT ?"
+        params.append(limit)
+        return [_to_record(r) for r in self.db.execute(q, params).fetchall()]
+
     def search(self, query, *, embedding, now, scope="default", types=None, k=10, as_of=None):
         as_of = now if as_of is None else as_of
         rows = [dict(r) for r in self.db.execute("SELECT rowid,* FROM memory WHERE scope=?", (scope,))]

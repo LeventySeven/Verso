@@ -30,6 +30,12 @@ class InMemoryBackend:
     def count(self) -> int:
         return len(self._recs)
 
+    def recent(self, *, scope="default", types=None, limit=100):
+        live = [r for r in self._recs
+                if r.scope == scope and r.invalid_at is None and (not types or r.type in types)]
+        live.sort(key=lambda r: r.valid_at, reverse=True)   # newest-first
+        return live[:limit]
+
     def search(self, query, *, embedding, now, scope="default", types=None, k=10, as_of=None):
         as_of = now if as_of is None else as_of
         q_terms = set(_terms(query))

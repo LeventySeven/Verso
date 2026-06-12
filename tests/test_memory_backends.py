@@ -34,3 +34,13 @@ def test_contract_recall_as_of_and_bound(backend):
     for i in range(5):
         backend.add(_rec(f"r{i}", f"row {i}", valid_at=float(i)))
     assert backend.count() <= 3                     # both backends honor the bound
+
+
+def test_contract_recent_returns_live_records_newest_first(backend):
+    backend.add(_rec("e0", "episode zero", type=MemoryType.EPISODIC, valid_at=10.0))
+    backend.add(_rec("e1", "episode one", type=MemoryType.EPISODIC, valid_at=20.0))
+    backend.add(_rec("f0", "a fact", type=MemoryType.FACT, valid_at=15.0))
+    rec = backend.recent(scope="default", types=[MemoryType.EPISODIC], limit=10)
+    assert [r.id for r in rec] == ["e1", "e0"]      # newest-first, type-filtered (the FACT is excluded)
+    backend.invalidate("e0", at=25.0)
+    assert [r.id for r in backend.recent(scope="default", types=[MemoryType.EPISODIC], limit=10)] == ["e1"]
