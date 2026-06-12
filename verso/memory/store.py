@@ -60,6 +60,8 @@ class Memory:
             return []
         out = reflector([r.content for r in episodics])
         derived = await out if inspect.isawaitable(out) else out
+        if isinstance(derived, str):           # a reflector that returns one string → one memory, not per-char
+            derived = [derived]
         ids = [await self.remember(d, type=target_type, importance=importance) for d in derived]
         at = self.clock()
         for r in episodics:

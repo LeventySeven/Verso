@@ -35,6 +35,14 @@ async def test_reflect_can_populate_the_procedural_tier():
     assert any("do the steps in order" in h.content for h in hits)
 
 
+async def test_reflect_coerces_a_string_reflector_result_to_one_fact_not_per_char():
+    m = _mem()
+    await m.remember("note", type=MemoryType.EPISODIC)
+    facts = await m.reflect(lambda c: "one consolidated fact", trigger_n=0)   # returns str, not list[str]
+    assert len(facts) == 1                                # treated as ONE fact, not 20 single-character facts
+    assert any("one consolidated fact" in h.content for h in await m.recall("consolidated fact"))
+
+
 async def test_reflect_supports_an_async_reflector():
     m = _mem()
     await m.remember("an episodic note", type=MemoryType.EPISODIC)
