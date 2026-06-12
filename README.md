@@ -117,6 +117,21 @@ past = await mem.recall_as_of("units", as_of=ts)       # what the agent knew at 
 
 One store, swappable backend (stdlib SQLite dev default → pgvector/Mem0 later); ADD-only, never deletes (supersede invalidates); bounded by default.
 
+**Hooks — the extensibility seam** (the loop stays <200 lines; weight lives here):
+
+```python
+from verso import Agent, Hooks, PermissionDecision
+
+hooks = Hooks(
+    pre_tool=[lambda call: PermissionDecision.ASK if call[0] == "send_email" else PermissionDecision.ALLOW],
+    post_tool=[lambda call, content: f"{content}\n[reminder: stay on task]"],   # reinforcement on every return
+    on_stop=[lambda result: log(result.stop_reason)],
+)
+agent = Agent(model=..., tools=[...], hooks=hooks)   # no hooks ⇒ identical to the bare loop
+```
+
+Permission is 4-valued (`allow | deny | ask | defer`); durable human-in-the-loop (`ctx.hitl.request`) arrives with the Phase-2 seam.
+
 ## Status
 
 Design-locked, pre-implementation. The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**.
