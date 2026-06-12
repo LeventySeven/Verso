@@ -1,5 +1,7 @@
 # Verso Phase 0 — Plan 5: Streaming (completes Phase 0)
 
+> **✅ SHIPPED** — implemented test-first, independently rechecked-APPROVED, on `main`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** `async for ev in agent.stream(task)` yields a typed, true-delta event stream (step / message.delta / reasoning.delta / tool.start / tool.result / done) as the loop runs, with an SSE transport for shipping it over HTTP.

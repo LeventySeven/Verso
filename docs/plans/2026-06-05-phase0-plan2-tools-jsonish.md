@@ -1,5 +1,7 @@
 # Verso Phase 0 — Plan 2: Tools Depth + jsonish
 
+> **✅ SHIPPED** — implemented test-first, independently rechecked-APPROVED, on `main`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add the `jsonish` parse→coerce waterfall (the one non-composable engine), structured output via `Agent.run(task, output_type=Model)` with a single reask, and the `think`/`done` builtin tools (`done` → explicit `StopReason.DONE`).

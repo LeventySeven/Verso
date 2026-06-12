@@ -1,5 +1,7 @@
 # Verso Phase 0 — Plan 3: Context Engineering
 
+> **✅ SHIPPED** — implemented test-first, independently rechecked-APPROVED, on `main`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make context a first-class, inspectable object. Introduce `ContextBundle` (system + history + tools with per-section token estimates), a token-budget guard that triggers `prune()` observation-masking, KV-cache discipline (instructions become a stable **system** prefix; deterministic tool-schema serialization), and `Agent.inspect()` that renders *exactly* what the model will receive.

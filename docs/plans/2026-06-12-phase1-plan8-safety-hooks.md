@@ -1,5 +1,7 @@
 # Verso Phase 1 — Plan 8: Safety & hooks
 
+> **✅ SHIPPED** — implemented test-first, independently rechecked-APPROVED, on `main`.
+
 > **Phase-1 plan set:** Plan 6 (evals) → Plan 7 (memory) → **Plan 8 — safety/hooks (this doc)**. Smallest of the three; it is the **one Phase-1 plan that modifies `core/loop.py`** (additively, fully back-compatible). Implement task-by-task with `compound-v:batched-implementation` (TDD). Never edit a test to make it pass.
 
 **Goal:** ship the **5-stage lifecycle hooks** as the extensibility mechanism (not core-loop edits), the **4-valued permission decision** (`allow | deny | ask | defer`) on tool calls, and the **reinforcement-on-tool-return channel** (§14.4 — `post_tool` may rewrite a tool result to re-assert the objective / inject a recovery hint, *because* the static prefix is frozen for the cache). Hooks are **opt-in**; with no hooks attached, the loop behaves byte-identically to Phase 0.

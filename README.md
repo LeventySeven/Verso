@@ -167,7 +167,7 @@ Resume re-executes the tool from the top with the answer returned — **make hit
 
 ## Status
 
-Design-locked, pre-implementation. The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**.
+**Phases 0–2 shipped** — the core loop, context engineering, model reliability, streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`) are all live and tested (`uv run pytest` → 183 passing). The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**; the per-build plans in **[`docs/plans/`](docs/plans/)**.
 
 ## How this was built
 

@@ -1,5 +1,7 @@
 # Verso Phase 1 — Plan 7: Memory
 
+> **✅ SHIPPED** — implemented test-first, independently rechecked-APPROVED, on `main`.
+
 > **Phase-1 plan set:** Plan 6 (evals) → **Plan 7 — memory (this doc)** → Plan 8 (safety/hooks). Independent of Plan 6; can be built in parallel. Implement task-by-task with `compound-v:batched-implementation` (TDD: failing test → run → minimal code → run → commit). Never edit a test to make it pass.
 
 **Goal:** ship Memory as a real primitive (not a Redis adapter): **one `Memory` object** over a **swappable backend**, the 4-tier typed schema (`scratchpad/episodic/fact/procedural`), `remember`/`recall`/`recall_as_of` (ADD-only, one write model), **RRF-fused retrieval** (lexical + vector + exact), temporal versioning, write-time **importance** + **outcome-status**, **bounded by default**. LOCK the types + `MemoryBackend` interface + DDL now; SHIP a **zero-infra stdlib-SQLite** backend. Memory is **opt-in / durable-tier** — OFF for tactical one-shots (§14.7).

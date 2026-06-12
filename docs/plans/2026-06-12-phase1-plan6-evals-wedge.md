@@ -1,5 +1,7 @@
 # Verso Phase 1 — Plan 6: Evals, the wedge
 
+> **✅ SHIPPED** — implemented test-first, independently rechecked-APPROVED, on `main`.
+
 > **Phase-1 plan set (risk-ordered):** **Plan 6 — evals (this doc, the wedge + the Phase-1 exit criterion)** → Plan 7 — memory → Plan 8 — safety/hooks. They are independent modules; evals is first because it is the headline differentiator and the §13 Phase-1 exit ("an eval suite drives an iteration on the Phase-0 agent").
 >
 > **For agentic workers:** implement task-by-task with `compound-v:batched-implementation`. Steps use the TDD rhythm (failing test → run → minimal code → run → commit). Do **not** edit a test to make it pass; the suspect is the code, not the test.

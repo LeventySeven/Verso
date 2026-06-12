@@ -1,5 +1,7 @@
 # Verso Phase 0 — Plan 4: Model-Layer Depth (reliability)
 
+> **✅ SHIPPED** — implemented test-first, independently rechecked-APPROVED, on `main`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make the model layer reliable: classify provider failures, retry transient ones with capped exponential backoff + jitter, and fail over across candidate models error-typed (retry-then-advance; raise immediately on auth/content-policy), recording every attempt.

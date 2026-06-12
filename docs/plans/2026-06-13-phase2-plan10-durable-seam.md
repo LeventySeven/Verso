@@ -1,5 +1,7 @@
 # Verso Phase 2 — Plan 10: RunContext[T] + the durable seam
 
+> **✅ SHIPPED** — implemented test-first, independently rechecked-APPROVED, on `main`.
+
 > **Phase-2 plan set:** Plan 9 (cache_control ✓) → **Plan 10 — durable seam (this doc)** → Plan 11 (safety depth, builds on RunContext[T]) → Plan 12 (memory real-infra). This is the thesis-critical plan. Implement with `compound-v:batched-implementation` (TDD: failing test → run → minimal code → run → commit). Never edit a test to make it pass.
 
 **Goal:** ship Verso's core bet — the **tactical↔durable seam**. One flag turns an ordinary in-memory agent into a **durable** one that **checkpoints its state each step**, can **pause for a human decision**, and **resumes** from the checkpoint (after a pause *or* a crash) — **with no rewrite and no forced graph**. When the flag is off, the loop is **byte-identical to Phase 1**.

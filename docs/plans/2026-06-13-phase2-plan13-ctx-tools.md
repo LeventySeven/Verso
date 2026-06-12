@@ -1,5 +1,7 @@
 # Verso Phase 2 — Plan 13: RunContext[T] injection into tools
 
+> **✅ SHIPPED** — implemented test-first, independently rechecked-APPROVED, on `main`.
+
 > **Follow-up to Plan 11**, completes the durable-HITL story from Plan 10. Implement with `compound-v:batched-implementation` (TDD). Never edit a test to make it pass.
 
 **Goal:** let a tool body **receive the typed `RunContext[T]`** — read `ctx.deps` (injected dependencies: db handle, user id, config) and call **`ctx.hitl.request(prompt)`** to pause the durable run for human input, then **resume** with the human's answer. This makes the `[T]` in `RunContext[T]` real for tools and turns durable HITL into something *any tool* can trigger (Plan 10 could only pause from a `pre_tool` ASK decision).
