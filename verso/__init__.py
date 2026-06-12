@@ -15,7 +15,7 @@ from verso.evals import (
 )
 from verso.memory import Memory, MemoryType
 from verso.safety.hooks import Hooks, PermissionDecision
-from verso.durable import RunContext, InMemoryCheckpointStore
+from verso.durable import RunContext, InMemoryCheckpointStore, SqliteCheckpointStore
 
 __version__ = "0.0.1"
 __all__ = [
@@ -29,7 +29,7 @@ __all__ = [
     "JudgePanel", "to_otel_attrs",
     "Memory", "MemoryType",
     "Hooks", "PermissionDecision",
-    "RunContext", "InMemoryCheckpointStore",
+    "RunContext", "InMemoryCheckpointStore", "SqliteCheckpointStore",
 ]
 
 

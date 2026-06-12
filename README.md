@@ -130,7 +130,22 @@ hooks = Hooks(
 agent = Agent(model=..., tools=[...], hooks=hooks)   # no hooks ⇒ identical to the bare loop
 ```
 
-Permission is 4-valued (`allow | deny | ask | defer`); durable human-in-the-loop (`ctx.hitl.request`) arrives with the Phase-2 seam.
+Permission is 4-valued (`allow | deny | ask | defer`); the durable human-in-the-loop seam is below.
+
+**Durable seam — one flag, no rewrite** (tactical by default; durable when you need it):
+
+```python
+from verso import Agent, SqliteCheckpointStore, StopReason
+
+agent = Agent(model=..., tools=[...], hooks=ask_before_send,
+              checkpointer=SqliteCheckpointStore("runs.db"))   # the one flag
+paused = await agent.run("refund the customer")    # pauses on an ASK tool
+if paused.stop_reason is StopReason.PAUSED:
+    # ...show paused.pending.prompt to a human, hours later, in another process...
+    done = await agent.resume(paused.resume_token, approve=True)
+```
+
+No `checkpointer` ⇒ the loop is byte-identical to the tactical path. State is checkpointed each step (crash-recoverable) and on pause; resume runs in a fresh process — no graph, no rewrite.
 
 ## Status
 
