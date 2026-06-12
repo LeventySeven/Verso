@@ -147,6 +147,24 @@ if paused.stop_reason is StopReason.PAUSED:
 
 No `checkpointer` ⇒ the loop is byte-identical to the tactical path. State is checkpointed each step (crash-recoverable) and on pause; resume runs in a fresh process — no graph, no rewrite.
 
+Tools can read injected dependencies and pause for a human themselves:
+
+```python
+@tool
+def refund(amount: int, ctx) -> str:        # `ctx` is injected, never a model argument
+    "Refund after human approval."
+    if ctx.hitl.request(f"approve refund of {amount}?") != "yes":   # pauses the durable run
+        return "cancelled"
+    ctx.deps["ledger"].refund(amount)        # ctx.deps carries your typed dependencies
+    return "refunded"
+
+agent = Agent(model=..., tools=[refund], deps={"ledger": ledger}, checkpointer=store)
+paused = await agent.run("refund $50")       # → PAUSED, paused.pending.prompt
+done = await agent.resume(paused.resume_token, answer="yes")   # re-runs refund; hitl returns "yes"
+```
+
+Resume re-executes the tool from the top with the answer returned — **make hitl tools idempotent up to the request** (no irreversible side-effect before `ctx.hitl.request`).
+
 ## Status
 
 Design-locked, pre-implementation. The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**.
