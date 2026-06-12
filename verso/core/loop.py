@@ -7,7 +7,7 @@ from verso.context.bundle import ContextBundle
 from verso.context.prune import prune
 from verso.durable.checkpoint import Checkpoint
 from verso.durable.context import HumanRequest, RunContext  # noqa: F401  (RunContext used by callers/annotations)
-from verso.durable.serde import msg_to_dict
+from verso.durable.serde import msg_from_dict, msg_to_dict
 from verso.model.base import Message, Model
 from verso.tools.dispatch import dispatch
 from verso.tools.tool import Tool
@@ -114,3 +114,33 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
     result = AgentResult(output="", stop_reason=StopReason.MAX_STEPS, usage=usage, steps=max_steps)
     await hooks.run_on_stop(result)
     return result
+
+
+async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", approve: bool, *,
+                      max_steps: int = 25, max_context_tokens: int | None = None,
+                      hooks: "Hooks | None" = None) -> AgentResult:
+    if ctx.store is None:
+        raise ValueError("resume requires a checkpointer")
+    cp = ctx.store.load(ctx.trace_id)
+    if cp is None:
+        raise KeyError(f"no checkpoint for {ctx.trace_id}")
+    bundle = ContextBundle(instructions=cp.instructions,
+                           history=[msg_from_dict(d) for d in cp.history],
+                           tools=list(tools))
+    usage = Usage(input_tokens=cp.usage_in, output_tokens=cp.usage_out)
+    if cp.pending is not None and cp.pending.tool_call_id is not None:
+        from verso.safety.hooks import Hooks
+        hk = hooks or Hooks()
+        tc_name, tc_id = cp.pending.tool_name, cp.pending.tool_call_id
+        tool_map = {t.name: t for t in tools}
+        # recover the held tool's arguments from the assistant turn already in history (bind once, always)
+        args = next((c.arguments for m in reversed(bundle.history) for c in m.tool_calls if c.id == tc_id), {})
+        if approve and tc_name in tool_map:
+            res = await dispatch(tool_map[tc_name], args)
+            content = _format_result(res.data) if res.ok else f"Error: {res.error}"
+        else:
+            content = f"Tool '{tc_name}' was denied by the human reviewer; it did not run."
+        content = await hk.run_post_tool((tc_name, args), content)
+        bundle.history.append(Message(role="tool", content=content, tool_call_id=tc_id, name=tc_name))
+    return await _drive(model, tools, cp.task, bundle, usage, cp.step + 1, max_steps,
+                        max_context_tokens=max_context_tokens, hooks=hooks, ctx=ctx)

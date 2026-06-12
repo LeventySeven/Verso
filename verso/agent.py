@@ -1,10 +1,12 @@
 # verso/agent.py
 from __future__ import annotations
+import uuid
 from typing import TYPE_CHECKING, AsyncIterator, Sequence
 
 from verso.context.bundle import ContextBundle
-from verso.core.loop import build_bundle, run_loop
+from verso.core.loop import build_bundle, resume_loop, run_loop
 from verso.core.stream_loop import run_stream
+from verso.durable.context import RunContext
 from verso.model.base import Model
 from verso.stream.events import StreamEvent
 from verso.tools.coerce import CoercionError, StructuredOutputError, coerce
@@ -18,23 +20,34 @@ if TYPE_CHECKING:
 class Agent:
     def __init__(self, model: Model, tools: Sequence[Tool] = (), *,
                  instructions: str | None = None, max_steps: int = 25,
-                 max_context_tokens: int | None = None, hooks: "Hooks | None" = None):
+                 max_context_tokens: int | None = None, hooks: "Hooks | None" = None,
+                 checkpointer: object | None = None):
         self.model = model
         self.tools = list(tools)
         self.instructions = instructions
         self.max_steps = max_steps
         self.max_context_tokens = max_context_tokens
         self.hooks = hooks
+        self.checkpointer = checkpointer
 
     def inspect(self, task: str) -> ContextBundle:
         """Return the exact ContextBundle the model will receive for `task` (turn 1)."""
         return build_bundle(self.tools, task, self.instructions)
 
     async def _run(self, task: str) -> AgentResult:
+        ctx = (RunContext(trace_id=uuid.uuid4().hex, store=self.checkpointer)
+               if self.checkpointer is not None else None)
         return await run_loop(self.model, self.tools, task, max_steps=self.max_steps,
                               instructions=self.instructions,
                               max_context_tokens=self.max_context_tokens,
-                              hooks=self.hooks)
+                              hooks=self.hooks, ctx=ctx)
+
+    async def resume(self, token: str, *, approve: bool) -> AgentResult:
+        if self.checkpointer is None:
+            raise ValueError("resume requires an Agent constructed with a checkpointer")
+        ctx = RunContext(trace_id=token, store=self.checkpointer)
+        return await resume_loop(self.model, self.tools, ctx, approve, max_steps=self.max_steps,
+                                 max_context_tokens=self.max_context_tokens, hooks=self.hooks)
 
     async def run(self, task: str, *, output_type: type | None = None) -> AgentResult:
         result = await self._run(task)
