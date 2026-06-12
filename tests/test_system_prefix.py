@@ -52,15 +52,26 @@ class _Client:
         self.messages = _Msgs(resp)
 
 
-async def test_anthropic_maps_system_param():
+async def test_anthropic_system_carries_one_ephemeral_cache_breakpoint():
     client = _Client(_Resp([_Block(type="text", text="hi")], 1, 1))
     m = AnthropicModel("claude-x", client=client)
     await m.complete([Message(role="user", content="hi")], [add], system="be terse")
-    assert client.messages.kwargs["system"] == "be terse"
+    system = client.messages.kwargs["system"]
+    # system is now a content-block list with ONE ephemeral cache breakpoint on the (last) block;
+    # render order tools→system→messages means this single breakpoint caches the tools+system prefix.
+    assert isinstance(system, list) and len(system) == 1
+    assert system[-1]["text"] == "be terse"                       # system text preserved
+    assert system[-1]["cache_control"] == {"type": "ephemeral"}
+    # exactly one breakpoint — tools are NOT separately marked (the system block already covers them)
+    assert all("cache_control" not in t for t in client.messages.kwargs["tools"])
 
 
-async def test_anthropic_omits_system_when_none():
+async def test_anthropic_omits_system_when_none_but_caches_tool_prefix():
     client = _Client(_Resp([_Block(type="text", text="hi")], 1, 1))
     m = AnthropicModel("claude-x", client=client)
     await m.complete([Message(role="user", content="hi")], [add])
     assert "system" not in client.messages.kwargs
+    # with no system, the single breakpoint moves to the last tool so the tool prefix still caches
+    tools = client.messages.kwargs["tools"]
+    assert tools[-1]["cache_control"] == {"type": "ephemeral"}
+    assert tools[-1]["name"] == "add"                             # tool definition intact

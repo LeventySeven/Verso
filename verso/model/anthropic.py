@@ -50,10 +50,18 @@ class AnthropicModel:
             "max_tokens": self.max_tokens,
             "messages": self._to_anthropic_messages(messages),
         }
+        anthropic_tools = self._to_anthropic_tools(tools) if tools else None
         if system:
-            kwargs["system"] = system
-        if tools:
-            kwargs["tools"] = self._to_anthropic_tools(tools)
+            # One ephemeral cache breakpoint on the system block. Render order is tools → system →
+            # messages, so this single breakpoint caches the whole byte-stable prefix (tools + system);
+            # the per-turn messages after it stay uncached. (Silently no-ops below the model's min prefix.)
+            kwargs["system"] = [{"type": "text", "text": system, "cache_control": {"type": "ephemeral"}}]
+            if anthropic_tools:
+                kwargs["tools"] = anthropic_tools
+        elif anthropic_tools:
+            # No system prompt → move the single breakpoint to the last tool so the tool prefix still caches.
+            anthropic_tools[-1] = {**anthropic_tools[-1], "cache_control": {"type": "ephemeral"}}
+            kwargs["tools"] = anthropic_tools
         resp = await self.client.messages.create(**kwargs)
 
         text_parts: list[str] = []
