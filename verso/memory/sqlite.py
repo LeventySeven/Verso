@@ -52,6 +52,8 @@ class SqliteBackend:
         for row in rows:
             if types and row["type"] not in {t.value for t in types}:
                 continue
+            if row["valid_at"] > as_of:        # not yet stored at the as-of instant
+                continue
             if row["invalid_at"] is not None and row["invalid_at"] <= as_of:
                 continue
             ttl = TTL_SECONDS[MemoryType(row["type"])]

@@ -13,6 +13,7 @@ from verso.evals import (
     Eval, Assertion, VersoSpan, VersoScore, define_outcome, LLMJudge,
     JudgePanel, to_otel_attrs,
 )
+from verso.memory import Memory, MemoryType
 
 __version__ = "0.0.1"
 __all__ = [
@@ -24,6 +25,7 @@ __all__ = [
     "StreamEvent", "EventType",
     "Eval", "Assertion", "VersoSpan", "VersoScore", "define_outcome", "LLMJudge",
     "JudgePanel", "to_otel_attrs",
+    "Memory", "MemoryType",
 ]
 
 

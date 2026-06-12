@@ -104,6 +104,19 @@ rate = await Eval.pass_k(lambda: agent, "...", called_tool, k=5)     # reliabili
 Eval.from_trace(VersoSpan.from_jsonl(open("incident-42.jsonl").read()), [called_tool])
 ```
 
+**Memory — typed, temporal, RRF-retrieved** (opt-in; for recurring-workflow agents):
+
+```python
+from verso import Memory, MemoryType
+
+mem = Memory.sqlite("agent.db", scope="user-1")
+await mem.remember("prefers metric units", type=MemoryType.FACT, importance=0.9)
+hits = await mem.recall("units")                       # RRF: lexical + vector + recency + importance
+past = await mem.recall_as_of("units", as_of=ts)       # what the agent knew at decision time
+```
+
+One store, swappable backend (stdlib SQLite dev default → pgvector/Mem0 later); ADD-only, never deletes (supersede invalidates); bounded by default.
+
 ## Status
 
 Design-locked, pre-implementation. The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**.
