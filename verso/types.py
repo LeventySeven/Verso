@@ -8,6 +8,7 @@ class StopReason(str, Enum):
     END_TURN = "end_turn"      # model returned a final text answer (no tool calls)
     DONE = "done"              # model called the `done` tool to terminate with a result
     MAX_STEPS = "max_steps"    # loop hit the max_steps cap
+    PAUSED = "paused"          # durable run paused for a human decision; resumable via resume_token
     ERROR = "error"            # unrecoverable error (later phases add more reasons)
 
 
@@ -29,4 +30,6 @@ class AgentResult:
     stop_reason: StopReason
     usage: Usage
     steps: int
-    parsed: object | None = None   # set when run(output_type=...) succeeds
+    parsed: object | None = None      # set when run(output_type=...) succeeds
+    resume_token: str | None = None   # set when stop_reason is PAUSED; pass to Agent.resume(...)
+    pending: object | None = None     # the HumanRequest awaiting an answer (typed object to avoid import cycle)
