@@ -19,12 +19,13 @@ class SqliteBackend:
         self.db.executescript(DDL)
 
     def add(self, r: MemoryRecord) -> None:
-        cur = self.db.execute(
-            "INSERT OR REPLACE INTO memory(id,type,content,scope,importance,outcome,valid_at,invalid_at,embedding)"
+        # ids are always fresh uuids; plain INSERT. The memory_ai/memory_ad triggers keep memory_fts in sync,
+        # including on eviction — so the FTS index can't accumulate orphaned terms.
+        self.db.execute(
+            "INSERT INTO memory(id,type,content,scope,importance,outcome,valid_at,invalid_at,embedding)"
             " VALUES(?,?,?,?,?,?,?,?,?)",
             (r.id, r.type.value, r.content, r.scope, r.importance, r.outcome, r.valid_at, r.invalid_at,
              json.dumps(r.embedding)))
-        self.db.execute("INSERT INTO memory_fts(rowid, content) VALUES(?, ?)", (cur.lastrowid, r.content))
         self.db.commit()
         self._enforce_bound()
 

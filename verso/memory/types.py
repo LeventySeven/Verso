@@ -40,5 +40,12 @@ CREATE TABLE IF NOT EXISTS memory (
   importance REAL NOT NULL, outcome TEXT, valid_at REAL NOT NULL, invalid_at REAL, embedding TEXT NOT NULL
 );
 CREATE VIRTUAL TABLE IF NOT EXISTS memory_fts USING fts5(content, content='memory', content_rowid='rowid');
+-- keep the external-content FTS index in lockstep with `memory`: insert adds terms, delete/evict removes them.
+CREATE TRIGGER IF NOT EXISTS memory_ai AFTER INSERT ON memory BEGIN
+  INSERT INTO memory_fts(rowid, content) VALUES (new.rowid, new.content);
+END;
+CREATE TRIGGER IF NOT EXISTS memory_ad AFTER DELETE ON memory BEGIN
+  INSERT INTO memory_fts(memory_fts, rowid, content) VALUES('delete', old.rowid, old.content);
+END;
 CREATE INDEX IF NOT EXISTS memory_scope ON memory(scope, type);
 """

@@ -46,3 +46,15 @@ def test_bounded_evicts_oldest_past_cap():
     for i in range(5):
         b.add(_rec(f"r{i}", f"record number {i}", valid_at=float(i)))
     assert b.count() == 3                                # bounded by default
+
+
+def test_search_after_eviction_returns_only_survivors():
+    # eviction DELETEs from `memory`; the memory_ad trigger must drop the evicted rows' FTS terms too,
+    # otherwise stale rowids linger in the index. Search must surface survivors and never an evicted record.
+    b = _backend(cap=2)
+    for i in range(4):
+        b.add(_rec(f"r{i}", f"postgres pooling note {i}", valid_at=float(i)))   # r0,r1 evicted; r2,r3 survive
+    hits = b.search("postgres pooling note", embedding=HashEmbedder(128).embed("postgres pooling note"), now=10.0)
+    ids = {h.id for h in hits}
+    assert ids == {"r2", "r3"}                           # exactly the survivors, no orphaned/evicted rows
+    assert b.count() == len(hits) == 2                   # FTS index stayed in lockstep with `memory`
