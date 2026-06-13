@@ -34,18 +34,16 @@ class SqliteVecBackend(SqliteBackend):
             raise ImportError(
                 "SqliteVecBackend needs the optional 'sqlite-vec' package — `pip install 'verso[vec]'`."
             ) from e
-        self.db = sqlite3.connect(path)
-        self.db.row_factory = sqlite3.Row
+        super().__init__(path, embedder=embedder, max_records=max_records)  # memory + memory_fts + FTS triggers
         self.db.enable_load_extension(True)
         sqlite_vec.load(self.db)
         self.db.enable_load_extension(False)
-        self.embedder = embedder
-        self.max_records = max_records
-        self.db.executescript(DDL)                                # memory + memory_fts + FTS sync triggers
-        self.db.executescript(_VEC_DDL.format(dim=embedder.dim))  # vec0 index + its sync triggers
+        self.db.executescript(_VEC_DDL.format(dim=embedder.dim))            # vec0 index + its sync triggers
         self.db.commit()
 
     def _vector_rank(self, live, embedding) -> dict:
+        # vec0's default L2 distance is rank-equivalent to cosine for the protocol's L2-normalized
+        # embeddings (what HashEmbedder produces), so this fuses with the lexical arm identically.
         live_ids = {r["rowid"] for r in live}
         # KNN over the ANN index. invalidate() is a soft UPDATE, so invalidated rows still sit in
         # vec_memory — over-fetch a candidate pool and filter to live. Live rows beyond the pool fall
