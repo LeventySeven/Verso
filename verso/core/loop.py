@@ -55,7 +55,7 @@ async def _pause(ctx, bundle, task, usage, step, hooks, resp, tc, request) -> Ag
     _checkpoint(ctx, bundle, task, usage, step, pending=request)
     paused = AgentResult(output="", stop_reason=StopReason.PAUSED, usage=usage, steps=step,
                          resume_token=ctx.trace_id, pending=request)
-    await hooks.run_on_stop(paused)
+    await hooks.run_on_stop(paused, ctx=ctx)
     return paused
 
 
@@ -80,20 +80,20 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
         if max_context_tokens is not None and bundle.estimate_tokens() > max_context_tokens:
             bundle.history = prune(bundle.history)
 
-        await hooks.run_pre_model(bundle)
+        await hooks.run_pre_model(bundle, ctx=ctx)
         resp = await model.complete(bundle.to_messages(), bundle.tools, system=bundle.system)
-        await hooks.run_post_model(resp)
+        await hooks.run_post_model(resp, ctx=ctx)
         usage = usage + resp.usage
 
         if not resp.tool_calls:
             result = AgentResult(output=resp.text, stop_reason=StopReason.END_TURN,
                                  usage=usage, steps=step)
-            await hooks.run_on_stop(result)
+            await hooks.run_on_stop(result, ctx=ctx)
             return result
 
         bundle.history.append(Message(role="assistant", content=resp.text, tool_calls=resp.tool_calls))
         for tc in resp.tool_calls:
-            decision = await hooks.run_pre_tool((tc.name, tc.arguments))
+            decision = await hooks.run_pre_tool((tc.name, tc.arguments), ctx=ctx)
             if decision != PermissionDecision.ALLOW:
                 approved = (decision == PermissionDecision.ASK and hooks.ask is not None
                             and hooks.ask((tc.name, tc.arguments)))
@@ -105,7 +105,7 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
                                                      tool_name=tc.name, tool_call_id=tc.id, kind="approve"))
                 else:
                     content = f"Tool '{tc.name}' was {decision.value} by policy; it did not run."
-                    content = await hooks.run_post_tool((tc.name, tc.arguments), content)
+                    content = await hooks.run_post_tool((tc.name, tc.arguments), content, ctx=ctx)
                     bundle.history.append(Message(role="tool", content=content, tool_call_id=tc.id, name=tc.name))
                     continue
             t = tool_map.get(tc.name)
@@ -123,15 +123,15 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
                     if tc.name == "done" and result.ok:
                         final = AgentResult(output=_format_result(result.data), stop_reason=StopReason.DONE,
                                             usage=usage, steps=step)
-                        await hooks.run_on_stop(final)
+                        await hooks.run_on_stop(final, ctx=ctx)
                         return final
-            content = await hooks.run_post_tool((tc.name, tc.arguments), content)
+            content = await hooks.run_post_tool((tc.name, tc.arguments), content, ctx=ctx)
             bundle.history.append(Message(role="tool", content=content, tool_call_id=tc.id, name=tc.name))
 
         _checkpoint(ctx, bundle, task, usage, step)   # per-step crash-recovery checkpoint (no pending)
 
     result = AgentResult(output="", stop_reason=StopReason.MAX_STEPS, usage=usage, steps=max_steps)
-    await hooks.run_on_stop(result)
+    await hooks.run_on_stop(result, ctx=ctx)
     return result
 
 
@@ -168,7 +168,7 @@ async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", ap
             else:
                 content = f"Tool '{tc_name}' was denied by the human reviewer; it did not run."
         from verso.safety.hooks import Hooks
-        content = await (hooks or Hooks()).run_post_tool((tc_name, args), content)
+        content = await (hooks or Hooks()).run_post_tool((tc_name, args), content, ctx=ctx)
         bundle.history.append(Message(role="tool", content=content, tool_call_id=tc_id, name=tc_name))
     return await _drive(model, tools, cp.task, bundle, usage, cp.step + 1, max_steps,
                         max_context_tokens=max_context_tokens, hooks=hooks, ctx=ctx)

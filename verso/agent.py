@@ -77,8 +77,11 @@ class Agent:
                 ) from second
 
     async def stream(self, task: str) -> AsyncIterator[StreamEvent]:
+        # streaming is tactical (durable resume is a later seam) → ctx carries deps + trace_id for
+        # ctx-aware hooks, but store=None (no checkpoint/pause on the stream path).
+        ctx = RunContext(trace_id=uuid.uuid4().hex, deps=self.deps, store=None)
         async for ev in run_stream(self.model, self.tools, task, max_steps=self.max_steps,
                                    instructions=self.instructions,
                                    max_context_tokens=self.max_context_tokens,
-                                   hooks=self.hooks):
+                                   hooks=self.hooks, ctx=ctx):
             yield ev

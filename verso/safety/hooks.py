@@ -20,6 +20,20 @@ async def _maybe_await(v):
     return await v if inspect.isawaitable(v) else v
 
 
+def _wants_ctx(fn) -> bool:
+    try:
+        return "ctx" in inspect.signature(fn).parameters
+    except (TypeError, ValueError):   # builtins / C callables expose no signature
+        return False
+
+
+async def _fire(hook, args, ctx):
+    # inject the RunContext only into hooks that declare a `ctx` parameter; ctx-less hooks are
+    # called exactly as before (byte-identical back-compat) — same convention as tool ctx-injection.
+    call = hook(*args, ctx=ctx) if (ctx is not None and _wants_ctx(hook)) else hook(*args)
+    return await _maybe_await(call)
+
+
 @dataclass
 class Hooks:
     """The 5-stage lifecycle hooks — the extensibility mechanism (not core-loop edits).
@@ -32,27 +46,26 @@ class Hooks:
     on_stop: list[Callable[[Any], Any]] = field(default_factory=list)           # (result) -> None
     ask: Callable[[ToolCallView], bool] | None = None                           # ASK resolver (Phase 1)
 
-    async def run_pre_model(self, bundle) -> None:
+    async def run_pre_model(self, bundle, ctx=None) -> None:
         for h in self.pre_model:
-            await _maybe_await(h(bundle))
+            await _fire(h, (bundle,), ctx)
 
-    async def run_post_model(self, response) -> None:
+    async def run_post_model(self, response, ctx=None) -> None:
         for h in self.post_model:
-            await _maybe_await(h(response))
+            await _fire(h, (response,), ctx)
 
-    async def run_pre_tool(self, call: ToolCallView) -> PermissionDecision:
-        decision = PermissionDecision.ALLOW
+    async def run_pre_tool(self, call: ToolCallView, ctx=None) -> PermissionDecision:
         for h in self.pre_tool:
-            d = await _maybe_await(h(call))
+            d = await _fire(h, (call,), ctx)
             if d and d != PermissionDecision.ALLOW:   # first non-allow wins (most restrictive)
                 return d
-        return decision
+        return PermissionDecision.ALLOW
 
-    async def run_post_tool(self, call: ToolCallView, content: str) -> str:
+    async def run_post_tool(self, call: ToolCallView, content: str, ctx=None) -> str:
         for h in self.post_tool:                      # reinforcement channel: may rewrite the result
-            content = await _maybe_await(h(call, content)) or content
+            content = await _fire(h, (call, content), ctx) or content
         return content
 
-    async def run_on_stop(self, result) -> None:
+    async def run_on_stop(self, result, ctx=None) -> None:
         for h in self.on_stop:
-            await _maybe_await(h(result))
+            await _fire(h, (result,), ctx)
