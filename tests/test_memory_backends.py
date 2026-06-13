@@ -13,11 +13,16 @@ def _rec(id, content, **kw):
                         embedding=HashEmbedder(128).embed(content))
 
 
-@pytest.fixture(params=["sqlite", "inmem"])
+@pytest.fixture(params=["sqlite", "inmem", "sqlitevec"])
 def backend(request):
     emb = HashEmbedder(128)
-    return SqliteBackend(":memory:", embedder=emb, max_records=3) if request.param == "sqlite" \
-        else InMemoryBackend(embedder=emb, max_records=3)
+    if request.param == "sqlite":
+        return SqliteBackend(":memory:", embedder=emb, max_records=3)
+    if request.param == "inmem":
+        return InMemoryBackend(embedder=emb, max_records=3)
+    pytest.importorskip("sqlite_vec")            # only the vec param needs the optional dep
+    from verso.memory.sqlitevec import SqliteVecBackend
+    return SqliteVecBackend(":memory:", embedder=emb, max_records=3)
 
 
 def test_contract_recall_ranks_relevant_first(backend):
@@ -44,3 +49,16 @@ def test_contract_recent_returns_live_records_newest_first(backend):
     assert [r.id for r in rec] == ["e1", "e0"]      # newest-first, type-filtered (the FACT is excluded)
     backend.invalidate("e0", at=25.0)
     assert [r.id for r in backend.recent(scope="default", types=[MemoryType.EPISODIC], limit=10)] == ["e1"]
+
+
+def test_sqlitevec_index_stays_in_sync_through_eviction():
+    pytest.importorskip("sqlite_vec")
+    from verso.memory.sqlitevec import SqliteVecBackend
+    emb = HashEmbedder(128)
+    b = SqliteVecBackend(":memory:", embedder=emb, max_records=2)
+    for i in range(5):
+        b.add(_rec(f"r{i}", f"vector note {i}", valid_at=float(i)))   # r0..r2 evicted; r3,r4 survive
+    vec_n = b.db.execute("SELECT count(*) c FROM vec_memory").fetchone()["c"]
+    assert vec_n == b.count() == 2               # vec0 index kept in lockstep with memory through eviction
+    hits = b.search("vector note", embedding=emb.embed("vector note"), now=10.0)
+    assert {h.id for h in hits} == {"r3", "r4"}  # KNN over the ANN index returns exactly the survivors

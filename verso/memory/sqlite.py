@@ -78,8 +78,7 @@ class SqliteBackend:
             "SELECT rowid FROM memory_fts WHERE memory_fts MATCH ? ORDER BY bm25(memory_fts)",
             (_fts_query(query),))]
         lex_rank = {rid: i for i, rid in enumerate(lex_ids)}
-        vec_order = sorted(live, key=lambda r: cosine(embedding, json.loads(r["embedding"])), reverse=True)
-        vec_rank = {r["rowid"]: i for i, r in enumerate(vec_order)}
+        vec_rank = self._vector_rank(live, embedding)
 
         def fused(r):
             rrf = 1.0 / (RRF_K + lex_rank.get(r["rowid"], 10_000)) + 1.0 / (RRF_K + vec_rank.get(r["rowid"], 10_000))
@@ -89,6 +88,12 @@ class SqliteBackend:
 
         ranked = sorted(live, key=fused, reverse=True)[:k]
         return [_to_record(r) for r in ranked]
+
+    def _vector_rank(self, live, embedding) -> dict:
+        # brute-force cosine over live candidates (correct at personal-infra scale);
+        # SqliteVecBackend overrides this with a sqlite-vec ANN index.
+        order = sorted(live, key=lambda r: cosine(embedding, json.loads(r["embedding"])), reverse=True)
+        return {r["rowid"]: i for i, r in enumerate(order)}
 
 
 def _fts_query(q: str) -> str:
