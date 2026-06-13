@@ -1,10 +1,8 @@
 # verso/memory/sqlitevec.py
 from __future__ import annotations
 import json
-import sqlite3
 
 from verso.memory.sqlite import SqliteBackend
-from verso.memory.types import DDL
 from verso.memory.embed import Embedder
 
 _VEC_DDL = """
