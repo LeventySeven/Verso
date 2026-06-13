@@ -15,18 +15,18 @@ Verso is a **Python agent framework** whose primitive is *the boring core done r
 
 ## Implementation status (Phases 0–2 shipped · 2026-06-13)
 
-Phases 0–2 are **built, tested, and pushed** (`uv run pytest` → 183 passing, 1 skipped; `ruff` clean). Every plan was implemented test-first and independently rechecked.
+Phases 0–2 (plus follow-up Plans 13–14) are **built, tested, and pushed** (`uv run pytest` → 187 passing, 1 skipped; `ruff` clean). Every plan was implemented test-first and independently rechecked.
 
 | Area | Shipped | Plan |
 |---|---|---|
 | Core ReAct loop, `@tool`/dispatch, ContextBundle + KV-cache prefix + `prune`, ProviderProfile/FailoverModel/retry, streaming + SSE | Phase 0 | walking-skeleton, plan2–5 |
 | **Evals wedge** — VersoSpan/VersoScore, `Eval.unit` + pass^k, LLMJudge + JudgePanel, `define_outcome`, `from_trace`, OTel `gen_ai.*` | Phase 1 | plan6 |
-| **Memory** — `Memory` over a swappable backend (Sqlite + InMemory), 4-tier typed, RRF retrieval, temporal `recall_as_of`, memory-as-tools, **`reflect()` consolidation + procedural tier** | Phase 1 + 2 | plan7, plan12 |
+| **Memory** — `Memory` over a swappable backend (Sqlite + InMemory + **`SqliteVecBackend` ANN index**), 4-tier typed, RRF retrieval, temporal `recall_as_of`, memory-as-tools, **`reflect()` consolidation + procedural tier** | Phase 1 + 2 | plan7, plan12, plan14 |
 | **Safety / hooks** — 5-stage lifecycle hooks, 4-valued `PermissionDecision`, reinforcement-on-return; **`PermissionPolicy` + session modes + `confidence_router`** | Phase 1 + 2 | plan8, plan11 |
 | **Prompt-cache** — `cache_control` ephemeral breakpoint on the byte-stable prefix | Phase 2 | plan9 |
 | **The durable seam (the thesis)** — `RunContext[T]`, checkpoint/resume, pause-on-ASK + tool-initiated `ctx.hitl.request`, InMemory + Sqlite checkpoint stores, `Agent(checkpointer=, deps=)`. **Byte-identical when off; survives process restart.** | Phase 2 | plan10, plan13 |
 
-**Deferred (seams locked, tracked):** pgvector/Mem0 memory adapters + sqlite-vec index (need live infra + SDK verification — plan14); `RunContext` injection into *hooks*; cross-re-run side-effect memoization; durable streaming resume.
+**Deferred (seams locked, tracked):** pgvector/Mem0 memory adapters (need a live Postgres / mem0 instance to verify-and-test against, not guess — the `MemoryBackend` contract is the seam they implement); `RunContext` injection into *hooks*; cross-re-run side-effect memoization; durable streaming resume.
 
 ---
 
