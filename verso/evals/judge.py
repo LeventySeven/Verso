@@ -1,5 +1,6 @@
 # verso/evals/judge.py
 from __future__ import annotations
+from dataclasses import dataclass
 from statistics import pstdev
 from typing import Protocol, runtime_checkable
 
@@ -11,6 +12,20 @@ from verso.model.base import Model, Message
 @runtime_checkable
 class Judge(Protocol):
     async def score(self, span: VersoSpan) -> VersoScore: ...
+
+
+@dataclass
+class CalibrationReport:
+    """How much to trust an LLM judge — measured against human labels, NOT assumed. Precision/recall
+    (the documented contract) over raw agreement: under class imbalance a judge that rubber-stamps
+    everything can score high agreement yet be useless (§14.8). `disagreements` is the triage queue —
+    the exact spans where judge != human, to read first when tuning the rubric."""
+    n: int
+    precision: float
+    recall: float
+    f1: float
+    agreement: float
+    disagreements: list   # list[tuple[VersoSpan, bool, bool]] -> (span, human_label, judge_passed)
 
 
 class LLMJudge:
@@ -42,6 +57,33 @@ class LLMJudge:
                               value=value, kind="judge", detail=str(v.get("detail", "")))
         except Exception as e:                       # a judge failure is a score, never an exception into the suite
             return VersoScore(name=self.name, passed=False, value=0.0, kind="judge", detail=f"judge-parse-error: {e}")
+
+    async def calibrate(self, labeled: list[tuple[VersoSpan, bool]]) -> CalibrationReport:
+        """Score the judge ITSELF against human labels before trusting it. For each (span, human),
+        run the normal `score()` path and compare `.passed` to the human label; report precision/recall/
+        f1 (the documented contract — treat `passed` as the positive class) plus raw agreement and the
+        exact disagreement queue. Pure arithmetic over `score()`: post-hoc, off the hot path, no new deps."""
+        tp = fp = fn = agree = 0
+        disagreements: list[tuple[VersoSpan, bool, bool]] = []
+        for span, human in labeled:
+            judged = (await self.score(span)).passed
+            if judged and human:
+                tp += 1
+            elif judged and not human:
+                fp += 1
+            elif (not judged) and human:
+                fn += 1
+            if judged == human:
+                agree += 1
+            else:
+                disagreements.append((span, human, judged))
+        precision = tp / (tp + fp) if (tp + fp) else 0.0
+        recall = tp / (tp + fn) if (tp + fn) else 0.0
+        f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) else 0.0
+        n = len(labeled)
+        agreement = agree / n if n else 0.0
+        return CalibrationReport(n=n, precision=precision, recall=recall, f1=f1,
+                                 agreement=agreement, disagreements=disagreements)
 
 
 class JudgePanel:

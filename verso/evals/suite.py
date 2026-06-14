@@ -32,6 +32,15 @@ class TraceCheck:
 
 
 @dataclass
+class BestOfN:
+    """Peak output / best-of-N: the highest-scoring of k samples for one task. `all_scores` keeps the
+    full sample distribution alongside the winner (so you can see the spread, not just the max)."""
+    span: VersoSpan
+    score: VersoScore
+    all_scores: list[VersoScore]
+
+
+@dataclass
 class UnitReport:
     scores: dict[str, dict[str, VersoScore]] = field(default_factory=dict)   # case -> name -> score
 
@@ -71,13 +80,34 @@ class Eval:
 
     @staticmethod
     async def pass_k(agent_factory: Callable[[], "object"], task: str,
-                     assertion: Assertion, *, k: int = 5) -> float:
-        """pass^k — repeat the same case k times; return the pass rate (reliability is a distribution)."""
-        passes = 0
-        for i in range(k):
-            span = await VersoSpan.capture(agent_factory(), task, trace_id=f"k{i}")
-            passes += int(assertion.score(span).passed)
-        return passes / k
+                     assertion: Assertion, *, k: int = 5,
+                     budgets: list[int] | None = None) -> "float | dict[int, float]":
+        """pass^k — repeat the same case k times; return the pass rate (reliability is a distribution).
+
+        `budgets` (optional) makes reliability a distribution AS A FUNCTION of a token budget, computed
+        POST-HOC from each span's `usage_total` — no hooks, no loop change. A run that passed using U
+        tokens would also pass under any budget B ≥ U, and would be stopped before passing under B < U,
+        so "passed AND usage_total ≤ B" equals the actively-capped pass rate. Returns:
+          - `budgets is None` → the float pass-rate, exactly as before (BACK-COMPAT, unchanged).
+          - `budgets` set     → dict[int, float] mapping each B → pass-rate under that cap (the curve is
+            monotonic non-decreasing in B: a higher budget can only admit more passing runs)."""
+        spans = [await VersoSpan.capture(agent_factory(), task, trace_id=f"k{i}") for i in range(k)]
+        scored = [(s, assertion.score(s).passed) for s in spans]
+        if budgets is None:
+            return sum(int(passed) for _, passed in scored) / k
+        return {b: sum(1 for s, passed in scored if passed and s.usage_total <= b) / k for b in budgets}
+
+    @staticmethod
+    async def best_of_n(agent_factory: Callable[[], "object"], task: str,
+                        scorer: Assertion, *, k: int = 5) -> BestOfN:
+        """Peak output / best-of-N as a one-liner: run k captures, score each with `scorer`, return the
+        highest-scoring one (ties → first). Composes the existing VersoSpan.capture + Assertion.score —
+        no loop/model change. The complement of pass_k: pass_k measures the floor (reliability), this
+        the ceiling (best achievable on a task)."""
+        results = [(s := await VersoSpan.capture(agent_factory(), task, trace_id=f"n{i}"), scorer.score(s))
+                   for i in range(k)]
+        best_span, best_score = max(results, key=lambda r: r[1].value)   # max() keeps the FIRST on ties
+        return BestOfN(span=best_span, score=best_score, all_scores=[sc for _, sc in results])
 
     @staticmethod
     def from_trace(span: VersoSpan, assertions: list[Assertion]) -> UnitReport:

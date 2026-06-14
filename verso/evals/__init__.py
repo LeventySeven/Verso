@@ -7,11 +7,11 @@ Langfuse / score with autoevals / run offline CI with `braintrust.Eval()`. These
 and lazily imported; the in-process surface above needs none of them.
 """
 from verso.evals.span import VersoSpan, VersoScore, SpanRecord
-from verso.evals.suite import Eval, Assertion, TraceCheck, UnitReport
-from verso.evals.judge import Judge, LLMJudge, JudgePanel
+from verso.evals.suite import Eval, Assertion, TraceCheck, UnitReport, BestOfN
+from verso.evals.judge import Judge, LLMJudge, JudgePanel, CalibrationReport
 from verso.evals.outcome import define_outcome, OutcomeResult
 from verso.evals.otel import to_otel_attrs
 
 __all__ = ["VersoSpan", "VersoScore", "SpanRecord", "Eval", "Assertion", "TraceCheck",
-           "UnitReport", "Judge", "LLMJudge", "JudgePanel", "define_outcome",
-           "OutcomeResult", "to_otel_attrs"]
+           "UnitReport", "BestOfN", "Judge", "LLMJudge", "JudgePanel", "CalibrationReport",
+           "define_outcome", "OutcomeResult", "to_otel_attrs"]
