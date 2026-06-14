@@ -32,9 +32,17 @@ class Agent:
                  instructions: str | None = None, max_steps: int = 25,
                  max_context_tokens: int | None = None, hooks: "Hooks | None" = None,
                  checkpointer: object | None = None, deps: object | None = None,
-                 max_tool_retries: int = 2, tool_output_budget: int | None = None):
+                 max_tool_retries: int = 2, tool_output_budget: int | None = None,
+                 trust_tier: str = "act"):
         self.model = _resolve(model)
         self.tools = list(tools)
+        # Trust as a construction-time capability boundary, not a call-time check: a "read"-tier agent
+        # (handles untrusted input — tickets, scraped web, email) gets a registry that simply lacks the
+        # privileged tools, so a prompt injection can't even request one. Stronger than a runtime
+        # PermissionPolicy gate (which the injection still reaches). Default "act" → full → byte-identical.
+        self.trust_tier = trust_tier
+        if trust_tier == "read":
+            self.tools = [t for t in self.tools if not t.privileged]
         self.instructions = instructions
         self.max_steps = max_steps
         self.max_context_tokens = max_context_tokens

@@ -20,7 +20,7 @@ from verso.evals import (
 from verso.memory import Memory, MemoryType
 from verso.memory.store import load_skills
 from verso.scaffolds import Scaffold, find_scaffolds
-from verso.safety.hooks import Hooks, PermissionDecision
+from verso.safety.hooks import Hooks, PermissionDecision, VerificationOutcome
 from verso.safety.policy import (
     PermissionPolicy, PermissionRule, allow_all, ask_every, ask_once, confidence_router,
 )
@@ -40,7 +40,7 @@ __all__ = [
     "JudgePanel", "CalibrationReport", "BestOfN", "PredictReport", "LiftReport", "to_otel_attrs",
     "Memory", "MemoryType", "load_skills",
     "Scaffold", "find_scaffolds",
-    "Hooks", "PermissionDecision",
+    "Hooks", "PermissionDecision", "VerificationOutcome",
     "PermissionPolicy", "PermissionRule", "allow_all", "ask_every", "ask_once", "confidence_router",
     "reinforce_objective",
     "RunContext", "InMemoryCheckpointStore", "SqliteCheckpointStore",

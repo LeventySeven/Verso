@@ -29,6 +29,7 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
     tool_map = {t.name: t for t in tools}
     usage = Usage()
     retries: dict[str, int] = {}
+    verify_count = 0   # re-drives spent on on_stop vetoes at natural terminations (END_TURN / DONE)
 
     for step in range(1, max_steps + 1):
         yield StreamEvent(type=EventType.STEP, step=step)
@@ -58,11 +59,17 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
         await hooks.run_post_model(resp, ctx=ctx)
         if not tool_calls:
             result = AgentResult(output=text, stop_reason=StopReason.END_TURN, usage=usage, steps=step)
-            await hooks.run_on_stop(result, ctx=ctx)
+            outcome = await hooks.run_on_stop(result, ctx=ctx)
+            if outcome is not None and not outcome.passed and verify_count < hooks.max_verify_retries:
+                verify_count += 1
+                bundle.history.append(Message(role="user",
+                                              content=f"Verification failed: {outcome.detail} Address it and finish."))
+                continue   # re-drive instead of terminating; the loop yields more events (run/stream parity)
             yield StreamEvent(type=EventType.DONE, result=result)
             return
 
         bundle.history.append(Message(role="assistant", content=text, tool_calls=tool_calls))
+        reverify = False   # set by a vetoed `done`: finish this turn's tool results, then re-drive
         for tc in tool_calls:
             yield StreamEvent(type=EventType.TOOL_START, tool=tc.name, arguments=tc.arguments)
             decision = await hooks.run_pre_tool((tc.name, tc.arguments), ctx=ctx)
@@ -115,10 +122,29 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
             yield StreamEvent(type=EventType.TOOL_RESULT, tool=tc.name, ok=ok, content=content)
             if tc.name == "done" and ok:
                 result = AgentResult(output=content, stop_reason=StopReason.DONE, usage=usage, steps=step)
-                await hooks.run_on_stop(result, ctx=ctx)
-                yield StreamEvent(type=EventType.DONE, result=result)
-                return
+                outcome = await hooks.run_on_stop(result, ctx=ctx)
+                if not (outcome is not None and not outcome.passed
+                        and verify_count < hooks.max_verify_retries):
+                    yield StreamEvent(type=EventType.DONE, result=result)
+                    return
+                # vetoed DONE under budget: keep the `done` tool result + feedback in history and
+                # re-drive (the outer loop yields more events), mirroring _drive's run() behavior.
+                verify_count += 1
+                reverify = True
+                bundle.history.append(Message(role="tool", content=content, tool_call_id=tc.id, name=tc.name))
+                done_ids = {m.tool_call_id for m in bundle.history if m.role == "tool"}
+                for sib in tool_calls:   # close not-yet-run siblings so the re-driven turn is well-formed
+                    if sib.id not in done_ids:
+                        bundle.history.append(Message(
+                            role="tool", tool_call_id=sib.id, name=sib.name,
+                            content=f"Tool '{sib.name}' was not run: the run is re-driving after a failed verification."))
+                bundle.history.append(Message(role="user",
+                                              content=f"Verification failed: {outcome.detail} Address it and finish."))
+                break   # stop processing this turn's tool_calls; the outer loop re-drives
             bundle.history.append(Message(role="tool", content=content, tool_call_id=tc.id, name=tc.name))
+
+        if reverify:
+            continue   # re-drive after a vetoed DONE (bounded by max_verify_retries + max_steps)
 
     result = AgentResult(output="", stop_reason=StopReason.MAX_STEPS, usage=usage, steps=max_steps)
     await hooks.run_on_stop(result, ctx=ctx)

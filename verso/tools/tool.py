@@ -16,6 +16,9 @@ class Tool:
     fn: Callable[..., Any]
     args_model: type              # pydantic model used to validate arguments at dispatch
     wants_ctx: bool = False       # True if the tool declares a `ctx` param → RunContext is injected at dispatch
+    privileged: bool = False      # sensitive/side-effecting (send_email, refund, write_file). A "read"-tier
+                                  # Agent drops privileged tools at construction → they're structurally absent,
+                                  # so untrusted input can't even request one (no call-time decision to reach).
 
 
 def _build_args_model(fn: Callable[..., Any]) -> type:
@@ -34,7 +37,8 @@ def _build_args_model(fn: Callable[..., Any]) -> type:
 
 
 def tool(fn: Callable[..., Any] | None = None, *, name: str | None = None,
-         description: str | None = None) -> Tool | Callable[[Callable[..., Any]], Tool]:
+         description: str | None = None, privileged: bool = False
+         ) -> Tool | Callable[[Callable[..., Any]], Tool]:
     def make(f: Callable[..., Any]) -> Tool:
         args_model = _build_args_model(f)
         schema = args_model.model_json_schema()
@@ -47,16 +51,18 @@ def tool(fn: Callable[..., Any] | None = None, *, name: str | None = None,
             fn=f,
             args_model=args_model,
             wants_ctx=wants_ctx,
+            privileged=privileged,
         )
 
     return make(fn) if fn is not None else make
 
 
 def tool_from_schema(name: str, description: str, parameters: dict,
-                     fn: Callable[..., Any], *, wants_ctx: bool = False) -> Tool:
+                     fn: Callable[..., Any], *, wants_ctx: bool = False,
+                     privileged: bool = False) -> Tool:
     """Register a tool from a RAW JSON Schema (MCP / OpenAPI / dynamically-generated) — the escape hatch
     for when you already have a schema and don't want signature introspection. Args are passed through to
     `fn` (permissive validation; the caller owns the schema). `@tool` stays the ergonomic default."""
     args_model = create_model(f"{name}_Args", __config__=ConfigDict(extra="allow"))
     return Tool(name=name, description=description, parameters=parameters, fn=fn,
-                args_model=args_model, wants_ctx=wants_ctx)
+                args_model=args_model, wants_ctx=wants_ctx, privileged=privileged)

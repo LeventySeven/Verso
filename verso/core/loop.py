@@ -85,6 +85,7 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
     hooks = hooks or Hooks()
     tool_map = {t.name: t for t in tools}
     retries: dict[str, int] = {}
+    verify_count = 0   # re-drives spent on on_stop vetoes at natural terminations (END_TURN / DONE)
 
     for step in range(start_step, max_steps + 1):
         if not await hooks.run_should_continue(bundle, ctx=ctx):
@@ -105,10 +106,16 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
         if not resp.tool_calls:
             result = AgentResult(output=resp.text, stop_reason=StopReason.END_TURN,
                                  usage=usage, steps=step)
-            await hooks.run_on_stop(result, ctx=ctx)
+            outcome = await hooks.run_on_stop(result, ctx=ctx)
+            if outcome is not None and not outcome.passed and verify_count < hooks.max_verify_retries:
+                verify_count += 1
+                bundle.history.append(Message(role="user",
+                                              content=f"Verification failed: {outcome.detail} Address it and finish."))
+                continue   # re-drive instead of terminating (bounded by max_verify_retries + max_steps)
             return result
 
         bundle.history.append(Message(role="assistant", content=resp.text, tool_calls=resp.tool_calls))
+        reverify = False   # set by a vetoed `done`: finish this turn's tool results, then re-drive
         for tc in resp.tool_calls:
             decision = await hooks.run_pre_tool((tc.name, tc.arguments), ctx=ctx)
             if decision != PermissionDecision.ALLOW:
@@ -146,13 +153,36 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
                     if tc.name == "done" and result.ok:
                         final = AgentResult(output=_format_result(result.data), stop_reason=StopReason.DONE,
                                             usage=usage, steps=step)
-                        await hooks.run_on_stop(final, ctx=ctx)
-                        return final
+                        outcome = await hooks.run_on_stop(final, ctx=ctx)
+                        if not (outcome is not None and not outcome.passed
+                                and verify_count < hooks.max_verify_retries):
+                            return final
+                        # vetoed DONE under budget: record the `done` tool result (so the assistant's
+                        # tool_call is well-formed for the re-drive), append the feedback below, re-drive.
+                        verify_count += 1
+                        reverify = True
+                        content = await hooks.run_post_tool((tc.name, tc.arguments), content, ctx=ctx)
+                        if ctx is not None and ctx.tool_output_budget:
+                            content = _truncate_tool_output(content, ctx.tool_output_budget)
+                        bundle.history.append(Message(role="tool", content=content, tool_call_id=tc.id, name=tc.name))
+                        # close any not-yet-run sibling tool_calls so the re-driven turn is well-formed
+                        # (mirrors _pause): a tool_call must always be paired with a tool result.
+                        done_ids = {m.tool_call_id for m in bundle.history if m.role == "tool"}
+                        for sib in resp.tool_calls:
+                            if sib.id not in done_ids:
+                                bundle.history.append(Message(
+                                    role="tool", tool_call_id=sib.id, name=sib.name,
+                                    content=f"Tool '{sib.name}' was not run: the run is re-driving after a failed verification."))
+                        bundle.history.append(Message(role="user",
+                                                      content=f"Verification failed: {outcome.detail} Address it and finish."))
+                        break   # stop processing this turn's tool_calls; the outer loop re-drives
             content = await hooks.run_post_tool((tc.name, tc.arguments), content, ctx=ctx)
             if ctx is not None and ctx.tool_output_budget:
                 content = _truncate_tool_output(content, ctx.tool_output_budget)
             bundle.history.append(Message(role="tool", content=content, tool_call_id=tc.id, name=tc.name))
 
+        if reverify:
+            continue   # re-drive after a vetoed DONE (bounded by max_verify_retries + max_steps)
         _checkpoint(ctx, bundle, task, usage, step)   # per-step crash-recovery checkpoint (no pending)
 
     result = AgentResult(output="", stop_reason=StopReason.MAX_STEPS, usage=usage, steps=max_steps)

@@ -16,6 +16,17 @@ class PermissionDecision(str, Enum):
 ToolCallView = tuple[str, dict]   # (tool_name, arguments)
 
 
+@dataclass
+class VerificationOutcome:
+    """What an `on_stop` hook may return to VETO a *natural* termination (END_TURN / DONE):
+    a maker-checker on the done-point. `passed=False` makes the loop append `detail` as feedback
+    and re-drive the model (bounded by `Hooks.max_verify_retries`); `passed=True` (or returning
+    None, as every existing hook does) lets the run terminate. Hooks that return None keep
+    `run_on_stop` returning None → the loop is byte-identical."""
+    passed: bool
+    detail: str = ""
+
+
 async def _maybe_await(v):
     return await v if inspect.isawaitable(v) else v
 
@@ -43,9 +54,10 @@ class Hooks:
     post_model: list[Callable[[Any], Any]] = field(default_factory=list)        # (response) -> None
     pre_tool: list[Callable[[ToolCallView], Any]] = field(default_factory=list)  # (call) -> PermissionDecision
     post_tool: list[Callable[[ToolCallView, str], Any]] = field(default_factory=list)  # (call, content) -> content
-    on_stop: list[Callable[[Any], Any]] = field(default_factory=list)           # (result) -> None
+    on_stop: list[Callable[[Any], Any]] = field(default_factory=list)           # (result) -> None | VerificationOutcome
     ask: Callable[[ToolCallView], bool] | None = None                           # ASK resolver (Phase 1)
     should_continue: Callable[..., Any] | None = None                           # (bundle[, ctx]) -> bool; stop the loop when False
+    max_verify_retries: int = 1                                                 # re-drive budget when an on_stop hook vetoes a natural stop (1 = at most one re-drive)
 
     async def run_pre_model(self, bundle, ctx=None) -> None:
         for h in self.pre_model:
@@ -69,9 +81,16 @@ class Hooks:
                 content = out
         return content
 
-    async def run_on_stop(self, result, ctx=None) -> None:
+    async def run_on_stop(self, result, ctx=None) -> "VerificationOutcome | None":
+        # Fire every on_stop hook (ctx-injection + sync/async still via _fire). If any returns a
+        # vetoing VerificationOutcome (passed=False), return the FIRST one so the loop can re-drive;
+        # else return None. All existing hooks return None → run_on_stop returns None → byte-identical.
+        veto = None
         for h in self.on_stop:
-            await _fire(h, (result,), ctx)
+            out = await _fire(h, (result,), ctx)
+            if veto is None and isinstance(out, VerificationOutcome) and not out.passed:
+                veto = out
+        return veto
 
     async def run_should_continue(self, bundle, ctx=None) -> bool:
         # unset → always continue (byte-identical no-op). Routed through _fire so a predicate that
