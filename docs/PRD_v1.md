@@ -1,6 +1,6 @@
 # Verso — Product Requirements Document (v1)
 
-**Status:** Draft v1.1 — design locked, **adversarially audited** (30-agent panel; `research/07_adversarial/_VERDICT.md`) · **Phases 0–2 + Plans 13–17 shipped (227 tests green)** · **raw-source rechecked + FULL-SOURCE-INVESTIGATED 2026-06-12** (verdict: design + bet held across all **319** Bad Guide sources, ~228 full-text + ~89 transcript-hunted, 4 workflows — **refinements consolidated in §14**; full evidence in `research/08_raw_recheck/` + `research/09_bad_guide_full_raw/`)
+**Status:** Draft v1.1 — design locked, **adversarially audited** (30-agent panel; `research/07_adversarial/_VERDICT.md`) · **Phases 0–2 + Plans 13–18 shipped (239 tests green)** · **raw-source rechecked + FULL-SOURCE-INVESTIGATED 2026-06-12** (verdict: design + bet held across all **319** Bad Guide sources, ~228 full-text + ~89 transcript-hunted, 4 workflows — **refinements consolidated in §14**; full evidence in `research/08_raw_recheck/` + `research/09_bad_guide_full_raw/`)
 **Date:** 2026-06-04 · addenda 2026-06-05: §12 positioning/GTM + founder-OS cross-reference; §10 resolved + §13 build/compose/defer scope (after a 12-agent resolution pass + a 30-agent adversarial audit) · 2026-06-12: §14 — recheck + full 319-source sweep, consolidated into one by-section refinement layer (`research/08_raw_recheck/`, `research/09_bad_guide_full_raw/`)
 **Owner:** Slava (@Seventydotleven)
 **Grounding:** the verified "keep-it-simple" thesis (`Verso/research/THESIS_VERIFICATION.md`) + 28,496 lines of reverse-engineered harvest across 54 source notes and 3 synthesis briefs (`Verso/research/01_bad_guide/`, `02_core/`, `03_teardowns/`). Every default in this PRD traces to that evidence; load-bearing ones cite the source note in brackets, e.g. `[agentic-architectures]`. A separate **founder-OS / go-to-market** layer — a 244-source deep index of *The Bad Guide* — lives in `Verso/research/04_bad_guide_full/` and feeds §12.
@@ -15,7 +15,7 @@ Verso is a **Python agent framework** whose primitive is *the boring core done r
 
 ## Implementation status (Phases 0–2 + follow-ups · 2026-06-14)
 
-Phases 0–2 (plus follow-up Plans 13–17) are **built, tested, and pushed** (`uv run pytest` → 227 passing, 1 skipped; `ruff` clean). Every plan was implemented test-first and independently rechecked.
+Phases 0–2 (plus follow-up Plans 13–18) are **built, tested, and pushed** (`uv run pytest` → 239 passing, 1 skipped; `ruff` clean). Every plan was implemented test-first and independently rechecked.
 
 | Area | Shipped | Plan |
 |---|---|---|
@@ -27,6 +27,7 @@ Phases 0–2 (plus follow-up Plans 13–17) are **built, tested, and pushed** (`
 | **The durable seam (the thesis)** — `RunContext[T]`, checkpoint/resume, pause-on-ASK + tool-initiated `ctx.hitl.request`, InMemory + Sqlite checkpoint stores, `Agent(checkpointer=, deps=)`. **Byte-identical when off; survives process restart.** | Phase 2 | plan10, plan13 |
 | **"Don't limit the user" escape hatches** — provider/sampling params + `extra_body`/`extra_headers`, `Retry(feedback)` self-healing tools + output validators, `tool_from_schema` (raw/MCP), read-only `ctx` enrichment (usage/messages/model/step), richer resume (edit-args / deny / skip), `should_continue` steering hook, `merge_messages`/`RemoveMessage` compaction. **All additive — byte-identical when unused.** | Phase 2 | plan16 |
 | **Time-travel (durable debugging)** — per-step checkpoint `history()` on the store contract + `Agent.fork(at_step=N)` to branch an independent run from any step (re-runs from the fork point, no step-memoization). Additive `checkpoint_history` table — legacy `.db` opens unmigrated; **no core-loop change** (`resume_loop` already continues a pending-less checkpoint). | Phase 2 | plan17 |
+| **Multi-provider** — `OpenAIModel` (Chat Completions) + `GoogleModel` (Gemini) behind the unchanged `Model` Protocol; `init_model('openai:…' / 'google:…')`. Lazy SDK imports (suite stays dependency-free), OMIT discipline, `extra_body`/`extra_config` escape. Removes Anthropic lock-in. | Phase 2 | plan18 |
 
 **Deferred (seams locked, tracked):** pgvector/Mem0 memory adapters (need a live Postgres / mem0 instance to verify-and-test against, not guess — the `MemoryBackend` contract is the seam they implement); durable streaming resume; cross-re-run side-effect memoization (full durable-execution determinism).
 

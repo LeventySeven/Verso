@@ -6,6 +6,8 @@
 
 **Done (machine-checkable):** `uv run pytest -q` green + `uv run ruff check verso tests` clean — every prior test passes UNMODIFIED. 227 currently pass.
 
+> **STATUS: SHIPPED 2026-06-14.** Both batches implemented test-first, independently rechecked (APPROVED — the OpenAI mapping verified field-by-field against the Chat Completions contract; the Gemini mapping verified against the live `google-genai` docs, including the config-as-dict question), and pushed. `uv run pytest -q` → **239 passed, 1 skipped**; `ruff` clean. The suite stays SDK-free (lazy imports + injected fake clients). Honesty: unit-tested to the `AnthropicModel` bar, **not** run against live OpenAI/Google APIs in-session.
+
 **Invariants:**
 - The adapter imports its SDK **lazily** (only in the `client` property), so importing `verso` and running the suite never requires `openai`/`google-genai`. Tests inject `client=`.
 - `None ⇒ omit` (the OMIT discipline) for every optional param, so a bare `OpenAIModel("gpt-x")` sends only `model` + `messages` (+ `tools` when present).
@@ -13,7 +15,7 @@
 
 ---
 
-## Task 1 — `OpenAIModel` (Chat Completions)  *(Batch U; `verso/model/openai.py` + `init_model` + `pyproject`)*
+## ✅ Task 1 — `OpenAIModel` (Chat Completions)  *(Batch U; `verso/model/openai.py` + `init_model` + `pyproject`)*
 
 Mirror `AnthropicModel` (read it — same constructor shape, lazy `client` property, OMIT loop, `extra_body`/`extra_headers`). Map Verso's internal message/tool format → OpenAI Chat Completions.
 
@@ -32,7 +34,7 @@ Mirror `AnthropicModel` (read it — same constructor shape, lazy `client` prope
   - `pyproject.toml`: add `openai = ["openai>=1.40"]` to `[project.optional-dependencies]`.
 - [ ] Run + commit: `feat(model): OpenAIModel (Chat Completions) behind the Model Protocol + init_model openai:`
 
-## Task 2 — `GoogleModel` (Gemini, `google-genai`)  *(Batch V; `verso/model/google.py` + `init_model` + `pyproject`)*
+## ✅ Task 2 — `GoogleModel` (Gemini, `google-genai`)  *(Batch V; `verso/model/google.py` + `init_model` + `pyproject`)*
 
 Same seam, Gemini shape. Gemini uses role `"model"` (not `"assistant"`), a separate `system_instruction`, `contents` with `parts`, and `function_call`/`function_response` parts. Use the current `google-genai` SDK (`from google import genai`), async via `client.aio.models.generate_content`.
 

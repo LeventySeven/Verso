@@ -180,7 +180,7 @@ await agent.resume(branch, approve=False)  # continue the branch independently �
 
 ## Status
 
-**Phases 0–2 shipped** — the core loop, context engineering, model reliability, streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`) are all live and tested (`uv run pytest` → 227 passing).
+**Phases 0–2 shipped** — the core loop, context engineering, model reliability (**Anthropic · OpenAI · Gemini**, one `Model` Protocol), streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`, time-travel) are all live and tested (`uv run pytest` → 239 passing).
 
 A *"don't limit the user"* hardening pass (Plan 16, benchmarked against LangGraph + Pydantic AI) then added the escape hatches a real user hits in the first hour — provider/sampling params + `extra_body`/`extra_headers`, `Retry(feedback)` self-healing tools + output validators, `tool_from_schema` for raw/MCP tools, read-only `ctx` enrichment (usage/messages/model/step), richer resume (edit-args / deny-message / skip), the `should_continue` steering hook, and `merge_messages`/`RemoveMessage` for safe compaction — **all additive (byte-identical when unused)**.
 
