@@ -167,9 +167,20 @@ Resume re-executes the tool from the top with the answer returned — **make hit
 
 Resume can also approve-and-edit (`override_args=`), deny-with-reason (`deny_message=`), or skip (`skip=True`). For custom control flow without a graph DSL — routing, retries, fan-out, and the `should_continue` steering hook — see **[`docs/recipes/plain-async-python.md`](docs/recipes/plain-async-python.md)**.
 
+**Time-travel** — inspect a durable run's per-step trajectory and branch from any point, no graph required:
+
+```python
+for cp in agent.history(token):            # the per-step checkpoint trajectory
+    print(cp.step, cp.pending)
+branch = agent.fork(token, at_step=2)      # clone the state at step 2 into a fresh run
+await agent.resume(branch, approve=False)  # continue the branch independently — the original is untouched
+```
+
+`fork` re-runs from the fork point (no hidden step-memoization); history is an additive table, so a pre-existing checkpoint DB opens unmigrated.
+
 ## Status
 
-**Phases 0–2 shipped** — the core loop, context engineering, model reliability, streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`) are all live and tested (`uv run pytest` → 217 passing).
+**Phases 0–2 shipped** — the core loop, context engineering, model reliability, streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`) are all live and tested (`uv run pytest` → 227 passing).
 
 A *"don't limit the user"* hardening pass (Plan 16, benchmarked against LangGraph + Pydantic AI) then added the escape hatches a real user hits in the first hour — provider/sampling params + `extra_body`/`extra_headers`, `Retry(feedback)` self-healing tools + output validators, `tool_from_schema` for raw/MCP tools, read-only `ctx` enrichment (usage/messages/model/step), richer resume (edit-args / deny-message / skip), the `should_continue` steering hook, and `merge_messages`/`RemoveMessage` for safe compaction — **all additive (byte-identical when unused)**.
 

@@ -6,6 +6,8 @@
 
 **Done (machine-checkable):** `uv run pytest -q` green + `uv run ruff check verso tests` clean — proving each item below, AND **every prior test passes UNMODIFIED** (additive gate). 217 currently pass.
 
+> **STATUS: SHIPPED 2026-06-14.** Both tasks implemented test-first, independently rechecked (verdict APPROVED), and pushed. `uv run pytest -q` → **227 passed, 1 skipped**; `ruff` clean. Verified: the `checkpoint` table / `load` / blob bytes are byte-identical, a legacy `.db` opens with no migration, and `verso/core/loop.py` was not touched (the `pending is None` continue path already existed).
+
 **The additive / byte-identical invariant (load-bearing):**
 - `save(cp)` / `load(trace_id)` / `delete(trace_id)` keep their exact current observable behavior. `load` still returns the *latest* checkpoint.
 - The existing sqlite `checkpoint` table schema is **untouched** — history lives in a NEW `checkpoint_history` table created with `IF NOT EXISTS`, so a pre-Plan-17 `.db` opens and resumes with zero migration (its `history()` is just empty for old traces).
@@ -15,7 +17,7 @@
 
 ---
 
-## Task 1 — Per-step retention + `history()` on the CheckpointStore contract  *(`verso/durable/{checkpoint,sqlite,inmem}.py`)*
+## ✅ Task 1 — Per-step retention + `history()` on the CheckpointStore contract  *(`verso/durable/{checkpoint,sqlite,inmem}.py`)*
 
 Retain one checkpoint per `(trace_id, step)` so the trajectory survives; keep `load` returning latest.
 
@@ -26,7 +28,7 @@ Retain one checkpoint per `(trace_id, step)` so the trajectory survives; keep `l
   - `inmem.py`: add `self._history: dict[str, dict[int, Checkpoint]] = {}`. `save`: keep the `_cps[trace_id]` latest write; also `self._history.setdefault(cp.trace_id, {})[cp.step] = copy.deepcopy(cp)`. `history(trace_id)`: return `[copy.deepcopy(c) for _, c in sorted(self._history.get(trace_id, {}).items())]`. `delete`: also `self._history.pop(trace_id, None)`. (Deep-copy in/out, same as today.)
 - [ ] Run + commit.
 
-## Task 2 — `Agent.history()` + `Agent.fork()`  *(`verso/agent.py`; export nothing new — methods on Agent)*
+## ✅ Task 2 — `Agent.history()` + `Agent.fork()`  *(`verso/agent.py`; export nothing new — methods on Agent)*
 
 - [ ] **Failing test** (`tests/test_durable_timetravel.py`): (a) `agent.history(token)` returns the trajectory (list of `Checkpoint`, ascending step). (b) `fork`: pause a run, `new = agent.fork(token, at_step=N)` returns a NEW token ≠ token; the original run's `history(token)` is unchanged; `resume(new, ...)` continues the branch and finishes; resuming the ORIGINAL still works independently (branches don't interfere). (c) `fork` from a non-paused step then `resume(new)` continues (replay from that step — proves the `pending is None` continue path). (d) `fork(token, at_step=<missing>)` raises.
 - [ ] **Implement** on `Agent` (both require `self.checkpointer`, else `ValueError` like `resume`):
