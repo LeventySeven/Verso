@@ -27,6 +27,23 @@ asyncio.run(main())
 
 Set `ANTHROPIC_API_KEY` first. Tests run offline via a `FakeModel`: `uv run pytest`.
 
+**Any provider** — `init_model("provider:model")` speaks Anthropic and Gemini natively, and *every OpenAI-compatible endpoint* through one adapter (each reads its own `*_API_KEY`):
+
+```python
+init_model("anthropic:claude-sonnet-4-6")
+init_model("openai:gpt-4o")
+init_model("google:gemini-2.0-flash")
+init_model("groq:llama-3.3-70b-versatile")            # Groq
+init_model("openrouter:anthropic/claude-3.5-sonnet")  # OpenRouter — one key, hundreds of models
+init_model("deepseek:deepseek-chat")                  # + together · fireworks · xai · mistral
+init_model("ollama:llama3")                            # local: Ollama / vLLM / LM Studio
+
+from verso.model.openai import OpenAIModel             # any other compatible gateway:
+OpenAIModel("my-model", base_url="https://my-gateway/v1", api_key="…")
+```
+
+We don't limit you to a fixed list — any OpenAI-wire endpoint works via `base_url`.
+
 **Structured output** — ask for a type and get it back parsed:
 
 ```python
@@ -180,7 +197,7 @@ await agent.resume(branch, approve=False)  # continue the branch independently �
 
 ## Status
 
-**Phases 0–2 shipped** — the core loop, context engineering, model reliability (**Anthropic · OpenAI · Gemini**, one `Model` Protocol), streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`, time-travel) are all live and tested (`uv run pytest` → 239 passing).
+**Phases 0–2 shipped** — the core loop, context engineering, model reliability (**Anthropic · OpenAI · Gemini + any OpenAI-compatible provider**, one `Model` Protocol), streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`, time-travel) are all live and tested (`uv run pytest` → 258 passing).
 
 A *"don't limit the user"* hardening pass (Plan 16, benchmarked against LangGraph + Pydantic AI) then added the escape hatches a real user hits in the first hour — provider/sampling params + `extra_body`/`extra_headers`, `Retry(feedback)` self-healing tools + output validators, `tool_from_schema` for raw/MCP tools, read-only `ctx` enrichment (usage/messages/model/step), richer resume (edit-args / deny-message / skip), the `should_continue` steering hook, and `merge_messages`/`RemoveMessage` for safe compaction — **all additive (byte-identical when unused)**.
 
