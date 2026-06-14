@@ -1,6 +1,6 @@
 # Verso — Product Requirements Document (v1)
 
-**Status:** Draft v1.1 — design locked, **adversarially audited** (30-agent panel; `research/07_adversarial/_VERDICT.md`) · **Phases 0–2 + Plans 13–22 shipped (366 tests green)** · **raw-source rechecked + FULL-SOURCE-INVESTIGATED 2026-06-12** (verdict: design + bet held across all **319** Bad Guide sources, ~228 full-text + ~89 transcript-hunted, 4 workflows — **refinements consolidated in §14**; full evidence in `research/08_raw_recheck/` + `research/09_bad_guide_full_raw/`)
+**Status:** Draft v1.1 — design locked, **adversarially audited** (30-agent panel; `research/07_adversarial/_VERDICT.md`) · **Phases 0–2 + Plans 13–22 shipped (404 tests green)** · **raw-source rechecked + FULL-SOURCE-INVESTIGATED 2026-06-12** (verdict: design + bet held across all **319** Bad Guide sources, ~228 full-text + ~89 transcript-hunted, 4 workflows — **refinements consolidated in §14**; full evidence in `research/08_raw_recheck/` + `research/09_bad_guide_full_raw/`)
 **Date:** 2026-06-04 · addenda 2026-06-05: §12 positioning/GTM + founder-OS cross-reference; §10 resolved + §13 build/compose/defer scope (after a 12-agent resolution pass + a 30-agent adversarial audit) · 2026-06-12: §14 — recheck + full 319-source sweep, consolidated into one by-section refinement layer (`research/08_raw_recheck/`, `research/09_bad_guide_full_raw/`)
 **Owner:** Slava (@Seventydotleven)
 **Grounding:** the verified "keep-it-simple" thesis (`Verso/research/THESIS_VERIFICATION.md`) + 28,496 lines of reverse-engineered harvest across 54 source notes and 3 synthesis briefs (`Verso/research/01_bad_guide/`, `02_core/`, `03_teardowns/`). Every default in this PRD traces to that evidence; load-bearing ones cite the source note in brackets, e.g. `[agentic-architectures]`. A separate **founder-OS / go-to-market** layer — a 244-source deep index of *The Bad Guide* — lives in `Verso/research/04_bad_guide_full/` and feeds §12.
@@ -15,7 +15,7 @@ Verso is a **Python agent framework** whose primitive is *the boring core done r
 
 ## Implementation status (Phases 0–2 + follow-ups · 2026-06-14)
 
-Phases 0–2 (plus follow-up Plans 13–22) are **built, tested, and pushed** (`uv run pytest` → 366 passing, 1 skipped; `ruff` clean). Every plan was implemented test-first and independently rechecked.
+Phases 0–2 (plus follow-up Plans 13–22) are **built, tested, and pushed** (`uv run pytest` → 404 passing, 1 skipped; `ruff` clean). Every plan was implemented test-first and independently rechecked.
 
 | Area | Shipped | Plan |
 |---|---|---|
@@ -32,6 +32,7 @@ Phases 0–2 (plus follow-up Plans 13–22) are **built, tested, and pushed** (`
 | **Model⇄logic swap** — `Agent(model='openai:gpt-4o')` (string or instance); per-run `run`/`stream`/`resume(model=…)`; `override(model=…)` scoped context manager. Write the logic once, change the model as many times as you want — no rebuild, no mutation (concurrent-safe). Matches Pydantic AI's typed shape. | Phase 2 | plan20 |
 | **Recheck hardening** — a cross-cutting "recheck everything" (2 workflows, ~120 agents: subsystem review→adversarial verify) fixed real parity/adversarial-input bugs + **2 security holes** (post_tool redaction failing open; LLMJudge prompt injection). Streaming/resume now mirror the audited loop; adapters survive real provider responses (usage=None, blocked Gemini, SDK timeout types). | Phase 2 | plan21 |
 | **Eval-craft + reliability slate** — process-level evals (assert the tool *path* via `SpanRecord.args`/`TraceCheck`/`trace_mode`); `LLMJudge.calibrate` (precision/recall vs humans); budget-aware `pass^k` + `best_of_n`; `UnitReport.worst()/divergent()`; `reinforce_objective` + `tool_output_budget`; tier-aware memory eviction + TTL-honest `recent()`; `Retry-After` + instant failover; provider-agnostic checkpoint proof + `HumanRequest.human_prompt`; runnable no-graph `examples/`. | Phase 2 | next-slate |
+| **Deep-mine residuals** — a *deeper* bad-guide/twitter pass (mechanism-level, growth-lens) yielded 7 verified-absent primitives: `Eval.predicts` (proxy↔outcome φ), `UnitReport.bucket` (failure piles), `Eval.lift` (harness-floor vs model-ceiling), `load_skills` (memory→instructions), the `# SCAFFOLD()` ratchet scanner, **quarantine-tier** tools (construction-time trust boundary), and the **verify-before-done** gate (`on_stop`→`VerificationOutcome` re-drive). All additive. | Phase 2 | badguide-deep-mine |
 
 **Deferred (seams locked, tracked):** pgvector/Mem0 memory adapters (need a live Postgres / mem0 instance to verify-and-test against, not guess — the `MemoryBackend` contract is the seam they implement); durable streaming resume; cross-re-run side-effect memoization (full durable-execution determinism).
 
