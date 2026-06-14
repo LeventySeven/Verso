@@ -1,5 +1,6 @@
 # verso/model/failover.py
 from __future__ import annotations
+from dataclasses import replace
 from typing import Sequence
 
 from verso.model.base import Message, Model, ModelResponse
@@ -18,11 +19,17 @@ class FailoverModel:
     """A Model that tries candidates in order, retrying each (call_with_retry) and advancing
     to the next on a FAILOVERABLE failure. AUTH/content-policy/other re-raise immediately.
 
+    With ``instant_failover=True`` (the default), a FAILOVERABLE failure on a candidate that
+    still has a spare behind it advances to that spare immediately — the per-candidate retry
+    ladder (and its backoff sleeps) is reserved for the LAST candidate, which has nowhere left
+    to fail over to. Set ``instant_failover=False`` to retry every candidate to exhaustion
+    before advancing (the old behavior).
+
     Note: ``.attempts`` records only the most recent ``complete()`` call — do not share one
     FailoverModel instance across concurrent runs if you intend to read ``.attempts``."""
 
     def __init__(self, candidates: Sequence[Model], *, retry: RetryPolicy | None = None,
-                 require_parameters: bool = True):
+                 require_parameters: bool = True, instant_failover: bool = True):
         if not candidates:
             raise ValueError("FailoverModel needs at least one candidate")
         if require_parameters:
@@ -31,17 +38,24 @@ class FailoverModel:
                     raise ValueError("require_parameters=True but a candidate cannot use tools")
         self.candidates = list(candidates)
         self.retry = retry or RetryPolicy()
+        self.instant_failover = instant_failover
         self.attempts: list[AttemptRecord] = []   # from the most recent complete()
 
     async def complete(self, messages: Sequence[Message], tools: Sequence[Tool],
                        *, system: str | None = None) -> ModelResponse:
         self.attempts = []
         last_exc: BaseException | None = None
-        for candidate in self.candidates:
+        last_idx = len(self.candidates) - 1
+        for i, candidate in enumerate(self.candidates):
+            # Non-last candidates fail over instantly (no backoff) when instant_failover is on;
+            # the last candidate always gets the full configured retry budget.
+            policy = self.retry
+            if self.instant_failover and i < last_idx:
+                policy = replace(self.retry, max_attempts=1)
             try:
                 return await call_with_retry(
                     lambda c=candidate: c.complete(messages, tools, system=system),
-                    self.retry, records=self.attempts,
+                    policy, records=self.attempts,
                 )
             except Exception as exc:  # noqa: BLE001
                 last_exc = exc

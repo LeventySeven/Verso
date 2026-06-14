@@ -55,7 +55,10 @@ class Memory:
         (an LLM or a deterministic fn → derived statements), store each as a `target_type` memory, and
         invalidate the consolidated sources (ADD-only: never deleted). A no-op until `trigger_n`
         episodics have accumulated (pass trigger_n=0 to force). `reflector` may be sync or async."""
-        episodics = self.backend.recent(scope=self.scope, types=[MemoryType.EPISODIC], limit=limit)
+        # thread the store clock into recent() so reflect()'s notion of "live" matches recall()/search():
+        # an episodic past its TTL is dropped here and never consolidated into a fresh permanent FACT.
+        episodics = self.backend.recent(scope=self.scope, types=[MemoryType.EPISODIC], limit=limit,
+                                        now=self.clock())
         if not episodics or len(episodics) < trigger_n:
             return []
         out = reflector([r.content for r in episodics])

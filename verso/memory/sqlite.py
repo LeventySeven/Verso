@@ -9,6 +9,10 @@ from verso.memory.embed import Embedder, cosine
 
 RRF_K = 60
 
+# Permanent tiers, derived from the single source of truth in types.py (TTL None == permanent) — never
+# hardcode a divergent list. These are the type *values* as stored in the `type` column.
+PERMANENT_TYPE_VALUES = tuple(sorted(t.value for t, ttl in TTL_SECONDS.items() if ttl is None))
+
 
 class SqliteBackend:
     def __init__(self, path: str = ":memory:", *, embedder: Embedder, max_records: int = 10_000):
@@ -30,11 +34,20 @@ class SqliteBackend:
         self._enforce_bound()
 
     def _enforce_bound(self) -> None:
+        # Tier-aware eviction: never drop a permanent (FACT/PROCEDURAL) row while an evictable
+        # non-permanent row remains. The candidate ordering puts non-permanent tiers first (so they go
+        # first), oldest-first within each tier; only when all rows are permanent does the oldest
+        # permanent row get evicted — so the bound always makes progress. `?` placeholders keep the
+        # permanent set sourced from types.py (PERMANENT_TYPE_VALUES), not a hardcoded literal.
         n = self.count()
         if n > self.max_records:
+            placeholders = ",".join("?" * len(PERMANENT_TYPE_VALUES))
             self.db.execute(
-                "DELETE FROM memory WHERE id IN (SELECT id FROM memory ORDER BY valid_at ASC LIMIT ?)",
-                (n - self.max_records,))
+                "DELETE FROM memory WHERE id IN ("
+                " SELECT id FROM memory"
+                f" ORDER BY (type IN ({placeholders})) ASC, valid_at ASC"
+                " LIMIT ?)",
+                (*PERMANENT_TYPE_VALUES, n - self.max_records))
             self.db.commit()
 
     def invalidate(self, id: str, at: float) -> None:
@@ -44,8 +57,13 @@ class SqliteBackend:
     def count(self) -> int:
         return self.db.execute("SELECT COUNT(*) c FROM memory").fetchone()["c"]
 
-    def recent(self, *, scope="default", types=None, limit=100):
-        # most-recent LIVE (non-invalidated) records of the given types — the consolidation feed for reflect().
+    def recent(self, *, scope="default", types=None, limit=100, now=None):
+        # most-recent LIVE records of the given types — the consolidation feed for reflect(). "Live" must
+        # mean the SAME thing search()/recall() means: non-invalidated AND not past its per-type TTL, so
+        # reflect() never folds an expired episodic (that recall() drops) into a fresh permanent FACT.
+        # `now` is the clock search() uses; reflect() threads the store clock through. It is optional and
+        # defaults to None — clock-less callers keep the pre-fix behavior (invalid_at-only), so every
+        # existing caller is unaffected; the TTL filter engages only once a caller supplies `now`.
         q = "SELECT rowid,* FROM memory WHERE scope=? AND invalid_at IS NULL"
         params: list = [scope]
         if types:
@@ -53,7 +71,16 @@ class SqliteBackend:
             params += [t.value for t in types]
         q += " ORDER BY valid_at DESC LIMIT ?"
         params.append(limit)
-        return [_to_record(r) for r in self.db.execute(q, params).fetchall()]
+        rows = self.db.execute(q, params).fetchall()
+        if now is None:
+            return [_to_record(r) for r in rows]
+        live = []
+        for r in rows:
+            ttl = TTL_SECONDS[MemoryType(r["type"])]
+            if ttl is not None and now - r["valid_at"] > ttl:   # same TTL drop as search()
+                continue
+            live.append(_to_record(r))
+        return live
 
     def search(self, query, *, embedding, now, scope="default", types=None, k=10, as_of=None):
         as_of = now if as_of is None else as_of

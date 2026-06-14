@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import random
 from dataclasses import dataclass
-from typing import Awaitable, Callable, TypeVar
+from typing import Any, Awaitable, Callable, Mapping, TypeVar
 
 from verso.model.errors import RETRYABLE, FailureKind, classify
 
@@ -33,6 +33,40 @@ def _backoff(policy: RetryPolicy, failed_attempt: int, rand: Callable[[], float]
     return base
 
 
+def _coerce_seconds(value: Any) -> float | None:
+    """Accept an int/float (seconds) or a numeric string; reject HTTP-dates / junk."""
+    if isinstance(value, bool):            # bool is an int subclass; not a duration
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value.strip())    # numeric string ("2", "2.5"); HTTP-date -> ValueError
+        except ValueError:
+            return None
+    return None
+
+
+def _retry_after_seconds(exc: BaseException) -> float | None:
+    """Duck-type a provider Retry-After hint off the exception (seconds).
+
+    Looks (in order) at ``exc.retry_after`` / ``getattr(exc, "retry-after")`` and at
+    ``exc.response.headers["retry_after" | "retry-after"]`` (a mapping). Returns the parsed
+    seconds, or ``None`` when absent / an HTTP-date / otherwise unparseable (caller falls
+    back to ``_backoff``). Providers differ (Anthropic/OpenAI/Groq), hence the duck-typing."""
+    for name in ("retry_after", "retry-after"):
+        secs = _coerce_seconds(getattr(exc, name, None))
+        if secs is not None:
+            return secs
+    headers = getattr(getattr(exc, "response", None), "headers", None)
+    if isinstance(headers, Mapping):
+        for key in ("retry_after", "retry-after"):
+            secs = _coerce_seconds(headers.get(key))
+            if secs is not None:
+                return secs
+    return None
+
+
 async def call_with_retry(fn: Callable[[], Awaitable[T]], policy: RetryPolicy | None = None, *,
                           records: list[AttemptRecord] | None = None,
                           sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
@@ -55,6 +89,10 @@ async def call_with_retry(fn: Callable[[], Awaitable[T]], policy: RetryPolicy | 
                     records.append(AttemptRecord(attempt=n, kind=kind, error=str(exc), delay=0.0))
                 raise
             delay = _backoff(policy, n, rand)
+            if kind is FailureKind.RATE_LIMIT:
+                hint = _retry_after_seconds(exc)        # honor provider Retry-After on 429s
+                if hint is not None:
+                    delay = min(max(hint, 0.0), policy.max)   # clamp to [0, policy.max]
             if records is not None:
                 records.append(AttemptRecord(attempt=n, kind=kind, error=str(exc), delay=delay))
             await sleep(delay)
