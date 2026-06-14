@@ -1,5 +1,6 @@
 import pytest
 from verso import Agent, tool
+from verso.safety.hooks import Hooks
 from verso.tools.errors import Retry
 from verso.tools.dispatch import dispatch
 from verso.tools.coerce import StructuredOutputError
@@ -37,7 +38,6 @@ async def test_tool_retry_feeds_feedback_then_succeeds():
 
 
 async def test_tool_retry_budget_caps_an_always_retrying_tool():
-    from verso.safety.hooks import Hooks
     seen: list[str] = []
     @tool
     def loops(value: str) -> str:
