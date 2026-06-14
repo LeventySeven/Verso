@@ -49,4 +49,7 @@ def init_model(spec: str):
     if provider == "openai":
         from verso.model.openai import OpenAIModel
         return OpenAIModel(model_id)
-    raise ValueError(f"unknown provider '{provider}' (supports 'anthropic'|'openai')")
+    if provider == "google":
+        from verso.model.google import GoogleModel
+        return GoogleModel(model_id)
+    raise ValueError(f"unknown provider '{provider}' (supports 'anthropic'|'openai'|'google')")
