@@ -5,7 +5,7 @@ import typing
 from dataclasses import dataclass
 from typing import Any, Callable
 
-from pydantic import create_model
+from pydantic import ConfigDict, create_model
 
 
 @dataclass
@@ -50,3 +50,13 @@ def tool(fn: Callable[..., Any] | None = None, *, name: str | None = None,
         )
 
     return make(fn) if fn is not None else make
+
+
+def tool_from_schema(name: str, description: str, parameters: dict,
+                     fn: Callable[..., Any], *, wants_ctx: bool = False) -> Tool:
+    """Register a tool from a RAW JSON Schema (MCP / OpenAPI / dynamically-generated) — the escape hatch
+    for when you already have a schema and don't want signature introspection. Args are passed through to
+    `fn` (permissive validation; the caller owns the schema). `@tool` stays the ergonomic default."""
+    args_model = create_model(f"{name}_Args", __config__=ConfigDict(extra="allow"))
+    return Tool(name=name, description=description, parameters=parameters, fn=fn,
+                args_model=args_model, wants_ctx=wants_ctx)
