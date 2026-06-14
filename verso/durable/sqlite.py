@@ -23,10 +23,12 @@ class SqliteCheckpointStore:
     def save(self, cp: Checkpoint) -> None:
         p = cp.pending
         data = json.dumps({
+            "version": 1,        # forward-compat marker; load() reads specific keys, tolerates its absence in old blobs.
             "trace_id": cp.trace_id, "task": cp.task, "instructions": cp.instructions,
             "history": cp.history, "usage_in": cp.usage_in, "usage_out": cp.usage_out, "step": cp.step,
             "pending": None if p is None else {"prompt": p.prompt, "key": p.key, "kind": p.kind,
-                                               "tool_name": p.tool_name, "tool_call_id": p.tool_call_id},
+                                               "tool_name": p.tool_name, "tool_call_id": p.tool_call_id,
+                                               "human_prompt": p.human_prompt},
         })
         self.db.execute("INSERT OR REPLACE INTO checkpoint(trace_id, data) VALUES(?, ?)", (cp.trace_id, data))
         self.db.execute("INSERT OR REPLACE INTO checkpoint_history(trace_id, step, data) VALUES(?,?,?)", (cp.trace_id, cp.step, data))
@@ -34,12 +36,18 @@ class SqliteCheckpointStore:
 
     @staticmethod
     def _decode(data: str) -> Checkpoint:
+        # Forward-compat: we read specific keys below and never require `version`, so a blob WITH the
+        # marker and an old blob WITHOUT it both load. (d.get("version", 1) is the schema rev when present.)
         d = json.loads(data)
         pend = d["pending"]
         return Checkpoint(
             trace_id=d["trace_id"], task=d["task"], instructions=d["instructions"],
             history=d["history"], usage_in=d["usage_in"], usage_out=d["usage_out"], step=d["step"],
-            pending=None if pend is None else HumanRequest(**pend),
+            pending=None if pend is None else HumanRequest(
+                prompt=pend["prompt"], key=pend["key"], kind=pend["kind"],
+                tool_name=pend["tool_name"], tool_call_id=pend["tool_call_id"],
+                human_prompt=pend.get("human_prompt"),    # old blobs lack it → None (byte-identical when unset)
+            ),
         )
 
     def load(self, trace_id: str) -> Checkpoint | None:

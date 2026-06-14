@@ -21,12 +21,14 @@ if TYPE_CHECKING:
 async def run_stream(model: Model, tools: Sequence[Tool], task: str,
                      max_steps: int = 25, instructions: str | None = None,
                      max_context_tokens: int | None = None,
-                     hooks: "Hooks | None" = None, ctx: "RunContext | None" = None) -> AsyncIterator[StreamEvent]:
+                     hooks: "Hooks | None" = None, ctx: "RunContext | None" = None,
+                     max_tool_retries: int = 2) -> AsyncIterator[StreamEvent]:
     from verso.safety.hooks import Hooks, PermissionDecision
     hooks = hooks or Hooks()
     bundle = build_bundle(tools, task, instructions)
     tool_map = {t.name: t for t in tools}
     usage = Usage()
+    retries: dict[str, int] = {}
 
     for step in range(1, max_steps + 1):
         yield StreamEvent(type=EventType.STEP, step=step)
@@ -93,7 +95,13 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
                 try:
                     res = await dispatch(t, tc.arguments, ctx=ctx)
                 except Retry as r:
-                    content, ok = f"Retry: {r.feedback}", False
+                    # mirror _drive's per-tool retry budget: bound Retry by max_tool_retries, not just max_steps.
+                    retries[tc.name] = retries.get(tc.name, 0) + 1
+                    if retries[tc.name] > max_tool_retries:
+                        content = f"Error: tool '{tc.name}' exceeded its retry budget ({max_tool_retries})."
+                    else:
+                        content = f"Retry: {r.feedback}"
+                    ok = False
                 except Paused:
                     content = (f"Tool '{tc.name}' requested human input but this run is not durable; "
                                "it did not pause.")

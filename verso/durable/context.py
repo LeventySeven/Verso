@@ -16,6 +16,13 @@ class HumanRequest:
     tool_name: str | None = None
     tool_call_id: str | None = None
     kind: str = "input"        # "input" = a tool asked via ctx.hitl.request; "approve" = a pre_tool ASK gate.
+    human_prompt: str | None = None    # optional reviewer-facing message; `prompt` stays the agent-internal detail.
+
+    @property
+    def display(self) -> str:
+        """The message to show a human reviewer: the bounded reviewer-facing `human_prompt` when a tool
+        supplied one, else the agent-internal `prompt` (byte-identical surface when human_prompt is unset)."""
+        return self.human_prompt or self.prompt
 
 
 class Paused(Exception):
@@ -33,10 +40,12 @@ class Hitl:
     def __init__(self) -> None:
         self._answers: dict[str, object] = {}
 
-    def request(self, prompt: str, *, key: str = "default"):
+    def request(self, prompt: str, *, key: str = "default", human_prompt: str | None = None):
+        # human_prompt is an OPTIONAL reviewer-facing message; omit it and `prompt` is the only surface
+        # (back-compatible: existing callers pass only prompt/key).
         if key in self._answers:
             return self._answers[key]            # resumed → return the human's answer
-        raise Paused(HumanRequest(prompt=prompt, key=key, kind="input"))
+        raise Paused(HumanRequest(prompt=prompt, key=key, kind="input", human_prompt=human_prompt))
 
     def _resolve(self, key: str, answer: object) -> None:
         self._answers[key] = answer

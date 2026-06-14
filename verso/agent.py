@@ -147,7 +147,7 @@ class Agent:
         async for ev in run_stream(m, self.tools, task, max_steps=self.max_steps,
                                    instructions=self.instructions,
                                    max_context_tokens=self.max_context_tokens,
-                                   hooks=self.hooks, ctx=ctx):
+                                   hooks=self.hooks, ctx=ctx, max_tool_retries=self.max_tool_retries):
             yield ev
 
     @contextmanager
