@@ -165,6 +165,8 @@ done = await agent.resume(paused.resume_token, answer="yes")   # re-runs refund;
 
 Resume re-executes the tool from the top with the answer returned — **make hitl tools idempotent up to the request** (no irreversible side-effect before `ctx.hitl.request`).
 
+Resume can also approve-and-edit (`override_args=`), deny-with-reason (`deny_message=`), or skip (`skip=True`). For custom control flow without a graph DSL — routing, retries, fan-out, and the `should_continue` steering hook — see **[`docs/recipes/plain-async-python.md`](docs/recipes/plain-async-python.md)**.
+
 ## Status
 
 **Phases 0–2 shipped** — the core loop, context engineering, model reliability, streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`) are all live and tested (`uv run pytest` → 183 passing). The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**; the per-build plans in **[`docs/plans/`](docs/plans/)**.

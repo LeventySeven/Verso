@@ -45,6 +45,7 @@ class Hooks:
     post_tool: list[Callable[[ToolCallView, str], Any]] = field(default_factory=list)  # (call, content) -> content
     on_stop: list[Callable[[Any], Any]] = field(default_factory=list)           # (result) -> None
     ask: Callable[[ToolCallView], bool] | None = None                           # ASK resolver (Phase 1)
+    should_continue: Callable[[Any], Any] | None = None                         # (bundle) -> bool; stop the loop when False
 
     async def run_pre_model(self, bundle, ctx=None) -> None:
         for h in self.pre_model:

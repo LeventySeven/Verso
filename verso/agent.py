@@ -47,11 +47,15 @@ class Agent:
                               max_context_tokens=self.max_context_tokens,
                               hooks=self.hooks, ctx=ctx, max_tool_retries=self.max_tool_retries)
 
-    async def resume(self, token: str, *, approve: bool = True, answer: object = None) -> AgentResult:
+    async def resume(self, token: str, *, approve: bool = True, answer: object = None,
+                     override_args: dict | None = None, deny_message: str | None = None,
+                     skip: bool = False) -> AgentResult:
         if self.checkpointer is None:
             raise ValueError("resume requires an Agent constructed with a checkpointer")
         ctx = RunContext(trace_id=token, deps=self.deps, store=self.checkpointer)
-        return await resume_loop(self.model, self.tools, ctx, approve, answer=answer, max_steps=self.max_steps,
+        return await resume_loop(self.model, self.tools, ctx, approve, answer=answer,
+                                 override_args=override_args, deny_message=deny_message, skip=skip,
+                                 max_steps=self.max_steps,
                                  max_context_tokens=self.max_context_tokens, hooks=self.hooks)
 
     async def run(self, task: str, *, output_type: type | None = None,

@@ -1,5 +1,6 @@
 # verso/core/loop.py
 from __future__ import annotations
+import inspect
 import json
 from typing import TYPE_CHECKING, Sequence
 
@@ -80,6 +81,15 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
     retries: dict[str, int] = {}
 
     for step in range(start_step, max_steps + 1):
+        if hooks.should_continue is not None:
+            cont = hooks.should_continue(bundle)
+            if inspect.isawaitable(cont):
+                cont = await cont
+            if not cont:
+                last = next((m.content for m in reversed(bundle.history) if m.role == "assistant" and m.content), "")
+                result = AgentResult(output=last, stop_reason=StopReason.END_TURN, usage=usage, steps=step - 1)
+                await hooks.run_on_stop(result, ctx=ctx)
+                return result
         if max_context_tokens is not None and bundle.estimate_tokens() > max_context_tokens:
             bundle.history = prune(bundle.history)
 
@@ -147,7 +157,9 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
 
 
 async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", approve: bool, *,
-                      answer: object = None, max_steps: int = 25, max_context_tokens: int | None = None,
+                      answer: object = None, override_args: dict | None = None,
+                      deny_message: str | None = None, skip: bool = False,
+                      max_steps: int = 25, max_context_tokens: int | None = None,
                       hooks: "Hooks | None" = None) -> AgentResult:
     if ctx.store is None:
         raise ValueError("resume requires a checkpointer")
@@ -172,12 +184,16 @@ async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", ap
             else:
                 content = f"Error: unknown tool '{tc_name}'."
         else:
-            # pre_tool ASK gate: run on approve, deny otherwise (existing behavior)
-            if approve and tc_name in tool_map:
-                res = await dispatch(tool_map[tc_name], args, ctx=ctx)
+            # pre_tool ASK gate: skip / approve(+override_args) / unknown-tool / deny(+message)
+            if skip:
+                content = f"Tool '{tc_name}' was skipped by the reviewer."
+            elif approve and tc_name in tool_map:
+                res = await dispatch(tool_map[tc_name], override_args if override_args is not None else args, ctx=ctx)
                 content = _format_result(res.data) if res.ok else f"Error: {res.error}"
+            elif approve:
+                content = f"Error: unknown tool '{tc_name}'."
             else:
-                content = f"Tool '{tc_name}' was denied by the human reviewer; it did not run."
+                content = deny_message or f"Tool '{tc_name}' was denied by the human reviewer; it did not run."
         from verso.safety.hooks import Hooks
         content = await (hooks or Hooks()).run_post_tool((tc_name, args), content, ctx=ctx)
         bundle.history.append(Message(role="tool", content=content, tool_call_id=tc_id, name=tc_name))

@@ -100,3 +100,31 @@ async def test_ask_deny_survives_sqlite_restart_and_still_denies(tmp_path):
     resumed = await resume_agent.resume(paused.resume_token, approve=False)
     assert resumed.stop_reason == StopReason.END_TURN and resumed.output == "done"
     assert RAN == []          # ASK-denied tool must NOT run after restart (kind survives sqlite serialization)
+
+
+async def test_resume_override_args_runs_with_edited_args():
+    RAN.clear()
+    store = InMemoryCheckpointStore()
+    agent = _paused_agent(store)
+    paused = await agent.run("email x")
+    resumed = await agent.resume(paused.resume_token, approve=True, override_args={"to": "edited@y.z"})
+    assert resumed.stop_reason == StopReason.END_TURN and resumed.output == "done"
+    assert RAN == ["edited@y.z"]                  # ran with the reviewer's edited args, not the model's
+
+
+async def test_resume_deny_message_is_fed_back():
+    RAN.clear()
+    store = InMemoryCheckpointStore()
+    agent = _paused_agent(store)
+    paused = await agent.run("email x")
+    resumed = await agent.resume(paused.resume_token, approve=False, deny_message="use the sandbox instead")
+    assert resumed.output == "done" and RAN == []
+
+
+async def test_resume_skip_continues_without_running_the_tool():
+    RAN.clear()
+    store = InMemoryCheckpointStore()
+    agent = _paused_agent(store)
+    paused = await agent.run("email x")
+    resumed = await agent.resume(paused.resume_token, skip=True)
+    assert resumed.stop_reason == StopReason.END_TURN and resumed.output == "done" and RAN == []
