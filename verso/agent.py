@@ -21,7 +21,8 @@ class Agent:
     def __init__(self, model: Model, tools: Sequence[Tool] = (), *,
                  instructions: str | None = None, max_steps: int = 25,
                  max_context_tokens: int | None = None, hooks: "Hooks | None" = None,
-                 checkpointer: object | None = None, deps: object | None = None):
+                 checkpointer: object | None = None, deps: object | None = None,
+                 max_tool_retries: int = 2):
         self.model = model
         self.tools = list(tools)
         self.instructions = instructions
@@ -30,6 +31,7 @@ class Agent:
         self.hooks = hooks
         self.checkpointer = checkpointer
         self.deps = deps
+        self.max_tool_retries = max_tool_retries
 
     def inspect(self, task: str) -> ContextBundle:
         """Return the exact ContextBundle the model will receive for `task` (turn 1)."""
@@ -43,7 +45,7 @@ class Agent:
         return await run_loop(self.model, self.tools, task, max_steps=self.max_steps,
                               instructions=self.instructions,
                               max_context_tokens=self.max_context_tokens,
-                              hooks=self.hooks, ctx=ctx)
+                              hooks=self.hooks, ctx=ctx, max_tool_retries=self.max_tool_retries)
 
     async def resume(self, token: str, *, approve: bool = True, answer: object = None) -> AgentResult:
         if self.checkpointer is None:

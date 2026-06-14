@@ -37,16 +37,34 @@ async def test_tool_retry_feeds_feedback_then_succeeds():
 
 
 async def test_tool_retry_budget_caps_an_always_retrying_tool():
+    from verso.safety.hooks import Hooks
+    seen: list[str] = []
     @tool
     def loops(value: str) -> str:
         "Always retries."
         raise Retry("never happy")
-    # model keeps calling the tool; budget=1 means after 1 'Retry:' it gets a terminal error, not infinite
     fm = FakeModel([ModelResponse(text="", tool_calls=[ToolCall(id=str(i), name="loops", arguments={"value": "x"})], usage=Usage()) for i in range(5)]
                    + [ModelResponse(text="gave up", tool_calls=[], usage=Usage())])
-    r = await Agent(model=fm, tools=[loops]).run("go")   # default max_tool_retries=2
-    # the run terminates (no infinite loop); the tool was bounded
-    assert r.output in ("gave up", "")                  # END_TURN or MAX_STEPS, but it STOPS
+    hooks = Hooks(post_tool=[lambda call, content: seen.append(content) or content])  # capture every tool result
+    r = await Agent(model=fm, tools=[loops], hooks=hooks, max_tool_retries=2).run("go")
+    assert r.stop_reason.value in ("end_turn", "max_steps")           # it TERMINATES (no infinite Retry loop)
+    # the BUDGET (not the script) bounded it: exactly 2 'Retry:' feedbacks, then the terminal budget error
+    assert sum(1 for c in seen if c.startswith("Retry:")) == 2
+    assert any("exceeded its retry budget" in c for c in seen)
+
+
+async def test_max_tool_retries_is_configurable_from_agent():
+    seen: list[str] = []
+    @tool
+    def loops(value: str) -> str:
+        "Always retries."
+        raise Retry("nope")
+    fm = FakeModel([ModelResponse(text="", tool_calls=[ToolCall(id=str(i), name="loops", arguments={"value": "x"})], usage=Usage()) for i in range(4)]
+                   + [ModelResponse(text="stop", tool_calls=[], usage=Usage())])
+    hooks = Hooks(post_tool=[lambda call, content: seen.append(content) or content])
+    await Agent(model=fm, tools=[loops], hooks=hooks, max_tool_retries=0).run("go")  # 0 ⇒ no Retry feedback at all
+    assert sum(1 for c in seen if c.startswith("Retry:")) == 0        # budget=0 honored from the Agent surface
+    assert any("exceeded its retry budget (0)" in c for c in seen)
 
 
 class Code(BaseModel):
