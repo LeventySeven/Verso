@@ -169,7 +169,11 @@ Resume can also approve-and-edit (`override_args=`), deny-with-reason (`deny_mes
 
 ## Status
 
-**Phases 0–2 shipped** — the core loop, context engineering, model reliability, streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`) are all live and tested (`uv run pytest` → 183 passing). The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**; the per-build plans in **[`docs/plans/`](docs/plans/)**.
+**Phases 0–2 shipped** — the core loop, context engineering, model reliability, streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`) are all live and tested (`uv run pytest` → 217 passing).
+
+A *"don't limit the user"* hardening pass (Plan 16, benchmarked against LangGraph + Pydantic AI) then added the escape hatches a real user hits in the first hour — provider/sampling params + `extra_body`/`extra_headers`, `Retry(feedback)` self-healing tools + output validators, `tool_from_schema` for raw/MCP tools, read-only `ctx` enrichment (usage/messages/model/step), richer resume (edit-args / deny-message / skip), the `should_continue` steering hook, and `merge_messages`/`RemoveMessage` for safe compaction — **all additive (byte-identical when unused)**.
+
+The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**; the per-build plans in **[`docs/plans/`](docs/plans/)**.
 
 ## How this was built
 

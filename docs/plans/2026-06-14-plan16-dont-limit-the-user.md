@@ -6,6 +6,8 @@
 
 **Done (machine-checkable):** `uv run pytest -q` green + `uv run ruff check verso tests` clean — proving each item below, AND every prior test passes UNMODIFIED (additive). 190 currently pass.
 
+> **STATUS: SHIPPED 2026-06-14.** All 7 tasks (Batches P–T) implemented test-first, each independently rechecked (verdict APPROVED), and pushed. `uv run pytest -q` → **217 passed, 1 skipped**; `ruff` clean. The no-feature path stayed byte-identical at every batch — the additive gate held throughout. One scope cut: `bypass_termination` was dropped (no clean use in Verso's no-`return_direct` model).
+
 **Divergence rule:** any item that forces a change to a no-opt-in path (a test that used none of these features breaks) means the change wasn't additive — STOP and report. After ~3 failed attempts at one mechanism, escalate.
 
 **User Review Required:** **yes** — Batches Q/R/S touch `verso/core/loop.py` (the audited core) again, additively. Confirm the no-feature path stays byte-identical before merging each.
@@ -14,11 +16,11 @@
 
 ## Batches (by coupling / risk)
 
-- **Batch P — edges (isolated, no core-loop touch):** Task 1 (provider/sampling params) + Task 3 (`Tool.from_schema`).
-- **Batch Q — ctx enrichment:** Task 4 (`RunContext` read-only `usage`/`messages`/`model`/`step`, populated by the loop).
-- **Batch R — self-healing:** Task 2 (`Retry(feedback)` from tools + output validators + configurable reask).
-- **Batch S — expressiveness:** Task 5 (richer resume: approve-with-edited-args / deny-message / skip) + Task 6 (around-step control hook + `bypass_termination` + a "plain async Python" example).
-- **Batch T — history hygiene:** Task 7 (`add_messages`-style dedup + `RemoveMessage` compaction).
+- ✅ **Batch P — edges (isolated, no core-loop touch):** Task 1 (provider/sampling params) + Task 3 (`Tool.from_schema`).
+- ✅ **Batch Q — ctx enrichment:** Task 4 (`RunContext` read-only `usage`/`messages`/`model`/`step`, populated by the loop).
+- ✅ **Batch R — self-healing:** Task 2 (`Retry(feedback)` from tools + output validators + configurable reask).
+- ✅ **Batch S — expressiveness:** Task 5 (richer resume: approve-with-edited-args / deny-message / skip) + Task 6 (`should_continue` around-step control hook + a "plain async Python" recipe). *`bypass_termination` dropped — cargo-cult, no clean use in Verso's no-`return_direct` model. `should_continue` is `ctx`-aware (can steer on `ctx.usage` budget).*
+- ✅ **Batch T — history hygiene:** Task 7 (`merge_messages` dedup-by-id + `RemoveMessage` / `__remove_all__` compaction; `Message.id` added additively, serde round-trips it byte-identically).
 
 ---
 
