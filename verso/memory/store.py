@@ -70,3 +70,22 @@ class Memory:
         for r in episodics:
             self.backend.invalidate(r.id, at)              # sources consolidated → invalidated, never deleted
         return ids
+
+
+async def load_skills(memory: Memory, *, scope: str | None = None,
+                      types: tuple[MemoryType, ...] = (MemoryType.PROCEDURAL, MemoryType.FACT),
+                      limit: int = 20, header: str = "Learned context (from memory):") -> str:
+    """Turn consolidated permanent memory into an instruction prefix — the bridge between `reflect()`
+    (which keeps consolidating durable records) and the static `instructions` string (which otherwise
+    never evolves between runs). Pure read + format: pulls the most-recent live records of `types`
+    (PROCEDURAL/FACT, the permanent tiers) for `scope` and renders them as a compact bullet prefix
+    so `instructions = base + await load_skills(mem, scope=...)` carries what the agent has learned.
+
+    Returns ``""`` when there's nothing to inject, so `base + load_skills(...)` is byte-identical to
+    `base` on an empty memory. No new memory state, no loop change."""
+    records = memory.backend.recent(scope=memory.scope if scope is None else scope,
+                                    types=list(types), limit=limit, now=memory.clock())
+    if not records:
+        return ""
+    bullets = "\n".join(f"- {r.content}" for r in records)
+    return f"{header}\n{bullets}"

@@ -121,6 +121,8 @@ def parse(text: str) -> Any:
             return json.loads(cand)
         except (json.JSONDecodeError, RecursionError):
             pass
+        # SCAFFOLD(malformed-json): lenient fallback (trailing commas, py->json literals) compensates for
+        # models that don't emit strict JSON. Delete once the target model is reliably strict-JSON-clean.
         try:
             return json.loads(_light_fix(cand))
         except (json.JSONDecodeError, RecursionError):

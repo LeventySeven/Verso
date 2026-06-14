@@ -15,9 +15,11 @@ from verso.model.errors import FailureKind, classify
 from verso.stream.events import StreamEvent, EventType
 from verso.evals import (
     Eval, Assertion, TraceCheck, VersoSpan, VersoScore, define_outcome, LLMJudge,
-    JudgePanel, CalibrationReport, BestOfN, to_otel_attrs,
+    JudgePanel, CalibrationReport, BestOfN, PredictReport, LiftReport, to_otel_attrs,
 )
 from verso.memory import Memory, MemoryType
+from verso.memory.store import load_skills
+from verso.scaffolds import Scaffold, find_scaffolds
 from verso.safety.hooks import Hooks, PermissionDecision
 from verso.safety.policy import (
     PermissionPolicy, PermissionRule, allow_all, ask_every, ask_once, confidence_router,
@@ -35,8 +37,9 @@ __all__ = [
     "call_with_retry", "FailureKind", "classify",
     "StreamEvent", "EventType",
     "Eval", "Assertion", "TraceCheck", "VersoSpan", "VersoScore", "define_outcome", "LLMJudge",
-    "JudgePanel", "CalibrationReport", "BestOfN", "to_otel_attrs",
-    "Memory", "MemoryType",
+    "JudgePanel", "CalibrationReport", "BestOfN", "PredictReport", "LiftReport", "to_otel_attrs",
+    "Memory", "MemoryType", "load_skills",
+    "Scaffold", "find_scaffolds",
     "Hooks", "PermissionDecision",
     "PermissionPolicy", "PermissionRule", "allow_all", "ask_every", "ask_once", "confidence_router",
     "reinforce_objective",

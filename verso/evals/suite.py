@@ -1,5 +1,6 @@
 # verso/evals/suite.py
 from __future__ import annotations
+import math
 from dataclasses import dataclass, field
 from typing import Callable
 
@@ -41,6 +42,29 @@ class BestOfN:
 
 
 @dataclass
+class PredictReport:
+    """Does a cheap PROXY forecast the real OUTCOME? (de-risk a leading indicator before you build a
+    loop on it). `phi` is the phi coefficient of the proxy-vs-outcome 2×2; `divergent` lists the cases
+    where the two checks disagreed (the proxy is lying about those)."""
+    n: int
+    phi: float
+    agreement: float
+    confusion: dict                         # keys: tp, fp, fn, tn
+    divergent: list                         # (case_name, proxy_passed, outcome_passed) where they differ
+
+
+@dataclass
+class LiftReport:
+    """Harness-floor vs model-ceiling — "the harness compounds, models rotate" as numbers. Per axis
+    (assertion name): the pass-rate of each model, the `harness_floor` (worst model = what the harness
+    delivers regardless of model) and the `model_ceiling` (best-minus-worst spread = the lift a better
+    model buys you on top of the floor)."""
+    per_axis: dict                          # axis -> {model_label: pass_rate}
+    harness_floor: dict                     # axis -> min rate across models
+    model_ceiling: dict                     # axis -> (max - min) rate across models
+
+
+@dataclass
 class UnitReport:
     scores: dict[str, dict[str, VersoScore]] = field(default_factory=dict)   # case -> name -> score
 
@@ -60,6 +84,20 @@ class UnitReport:
         diverged by at least `threshold` (high spread = a contested case worth a human look)."""
         return [(case, name, sc) for case, names in self.scores.items()
                 for name, sc in names.items() if sc.divergence >= threshold]
+
+    def bucket(self, classifier: Callable[[str, VersoScore], str] | None = None, *,
+               failures_only: bool = True) -> dict[str, list[tuple[str, str, VersoScore]]]:
+        """Failure-bucketing: group (case, name, score) into named piles so you attack the biggest pile
+        first (aggregation BEFORE prioritization). Default `classifier` buckets by `score.name`; pass one
+        (case, score)->label for richer piles. `failures_only` (default) keeps only `not passed`."""
+        piles: dict[str, list[tuple[str, str, VersoScore]]] = {}
+        for case, names in self.scores.items():
+            for name, sc in names.items():
+                if failures_only and sc.passed:
+                    continue
+                label = classifier(case, sc) if classifier is not None else sc.name
+                piles.setdefault(label, []).append((case, name, sc))
+        return piles
 
 
 class Eval:
@@ -126,3 +164,62 @@ class Eval:
             span = await VersoSpan.capture(agent_factory(), task, trace_id=case_name)
             report.scores[case_name] = {panel.name: await panel.score(span)}
         return report
+
+    @staticmethod
+    async def predicts(*, agent_factory: Callable[[], "object"], cases: dict[str, str],
+                       proxy: Assertion, outcome: Assertion) -> PredictReport:
+        """Does a cheap PROXY forecast the real OUTCOME? Capture each case ONCE (like unit()), score it
+        with BOTH checks, and report how well the proxy predicts the outcome via the phi coefficient of
+        the 2×2 table. Distinct from LLMJudge.calibrate (judge-vs-human): this is leading-indicator-vs-
+        what-you-care-about, so you can de-risk a proxy before building a loop on it."""
+        tp = fp = fn = tn = 0
+        divergent: list = []
+        for case_name, task in cases.items():
+            span = await VersoSpan.capture(agent_factory(), task, trace_id=case_name)
+            p = proxy.score(span).passed
+            o = outcome.score(span).passed
+            if p and o:
+                tp += 1
+            elif p and not o:
+                fp += 1
+            elif not p and o:
+                fn += 1
+            else:
+                tn += 1
+            if p != o:
+                divergent.append((case_name, p, o))
+        n = tp + fp + fn + tn
+        denom = math.sqrt((tp + fp) * (tp + fn) * (tn + fp) * (tn + fn))
+        phi = (tp * tn - fp * fn) / denom if denom else 0.0
+        agreement = (tp + tn) / n if n else 0.0
+        return PredictReport(n=n, phi=phi, agreement=agreement,
+                             confusion={"tp": tp, "fp": fp, "fn": fn, "tn": tn}, divergent=divergent)
+
+    @staticmethod
+    async def lift(*, agent_factory: Callable[[], "object"], cases: dict[str, str],
+                   assertions: list[Assertion], models: list) -> LiftReport:
+        """Harness-floor vs model-ceiling: run the SAME harness over the SAME cases under each model in
+        `models` (a str spec or a Model), score with `assertions`, and report per-axis pass-rates. The
+        `harness_floor` (min over models) is what your harness delivers regardless of model; the
+        `model_ceiling` (max-minus-min spread) is the lift a better model buys on top of that floor.
+        Each capture uses `agent.override(model=M)`, which swaps `agent.model` for the nested capture."""
+        # axis -> model_label -> [pass(bool), ...] across cases
+        tally: dict[str, dict[str, list[bool]]] = {a.name: {} for a in assertions}
+        for m in models:
+            label = m if isinstance(m, str) else getattr(m, "model_id", repr(m))
+            for case_name, task in cases.items():
+                agent = agent_factory()
+                with agent.override(model=m):
+                    span = await VersoSpan.capture(agent, task, trace_id=f"{label}:{case_name}")
+                for a in assertions:
+                    tally[a.name].setdefault(label, []).append(a.score(span).passed)
+        per_axis: dict = {}
+        harness_floor: dict = {}
+        model_ceiling: dict = {}
+        for axis, by_model in tally.items():
+            rates = {lbl: sum(passes) / len(passes) for lbl, passes in by_model.items()}
+            per_axis[axis] = rates
+            vals = list(rates.values())
+            harness_floor[axis] = min(vals) if vals else 0.0
+            model_ceiling[axis] = (max(vals) - min(vals)) if vals else 0.0
+        return LiftReport(per_axis=per_axis, harness_floor=harness_floor, model_ceiling=model_ceiling)
