@@ -6,6 +6,7 @@ from verso.tools.errors import Retry
 from verso.types import AgentResult, StopReason, Usage
 from verso.model.base import Model, Message, ModelResponse, ToolCall
 from verso.context.bundle import ContextBundle
+from verso.context.history import merge_messages, RemoveMessage, REMOVE_ALL_MESSAGES
 from verso.model.failover import FailoverModel, AllCandidatesFailed
 from verso.model.retry import RetryPolicy, AttemptRecord, call_with_retry
 from verso.model.errors import FailureKind, classify
@@ -26,6 +27,7 @@ __all__ = [
     "Agent", "tool", "Tool", "tool_from_schema", "AgentResult", "StopReason", "Usage",
     "Model", "Message", "ModelResponse", "ToolCall", "init_model",
     "CoercionError", "StructuredOutputError", "Retry", "ContextBundle",
+    "merge_messages", "RemoveMessage", "REMOVE_ALL_MESSAGES",
     "FailoverModel", "AllCandidatesFailed", "RetryPolicy", "AttemptRecord",
     "call_with_retry", "FailureKind", "classify",
     "StreamEvent", "EventType",

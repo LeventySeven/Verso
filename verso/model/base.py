@@ -23,6 +23,7 @@ class Message:
     tool_calls: list[ToolCall] = field(default_factory=list)   # set on assistant turns
     tool_call_id: str | None = None             # set on tool-result turns
     name: str | None = None                     # tool name, on tool-result turns
+    id: str | None = None                       # optional stable id for history dedup/compaction (see verso/context/history.py)
 
 
 @dataclass
