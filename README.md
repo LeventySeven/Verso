@@ -195,7 +195,7 @@ done = await agent.resume(paused.resume_token, answer="yes")   # re-runs refund;
 
 Resume re-executes the tool from the top with the answer returned — **make hitl tools idempotent up to the request** (no irreversible side-effect before `ctx.hitl.request`).
 
-Resume can also approve-and-edit (`override_args=`), deny-with-reason (`deny_message=`), or skip (`skip=True`). For custom control flow without a graph DSL — routing, retries, fan-out, and the `should_continue` steering hook — see **[`docs/recipes/plain-async-python.md`](docs/recipes/plain-async-python.md)**.
+Resume can also approve-and-edit (`override_args=`), deny-with-reason (`deny_message=`), or skip (`skip=True`). For custom control flow without a graph DSL — routing, retries, fan-out, and the `should_continue` steering hook — see **[`docs/recipes/plain-async-python.md`](docs/recipes/plain-async-python.md)** and the runnable **[`examples/`](examples/)** (`minimal_agent.py` — the <80-line floor; `orchestrator_workers.py` — orchestrator-workers in plain `asyncio.gather`, no graph).
 
 **Time-travel** — inspect a durable run's per-step trajectory and branch from any point, no graph required:
 
