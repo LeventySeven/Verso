@@ -26,3 +26,7 @@ htmlcov/
 
 # Research corpus — local-only (BAD_GUIDE full-source investigation notes & workflow scripts)
 research/
+.bad-research/
+.hyperresearch/
+.claude/
+/CLAUDE.md
