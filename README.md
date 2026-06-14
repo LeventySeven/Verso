@@ -44,6 +44,19 @@ OpenAIModel("my-model", base_url="https://my-gateway/v1", api_key="…")
 
 We don't limit you to a fixed list — any OpenAI-wire endpoint works via `base_url`.
 
+**Write the logic once, swap the model freely** — model choice is decoupled from agent logic; change it per call, per scope, or as the default, never a rewrite:
+
+```python
+agent = Agent("anthropic:claude-sonnet-4-6", tools=[...])   # logic written once
+await agent.run(task)                                  # the default model
+await agent.run(task, model="openai:gpt-4o")           # …same agent, a different model
+await agent.run(task, model="groq:llama-3.3-70b-versatile")
+with agent.override(model=fake):                       # scoped swap (tests / evals)
+    await agent.run(task)
+```
+
+`run` / `stream` / `resume` all take a per-call `model=` (a string or a `Model`); the override never mutates the agent, so concurrent runs are safe. (Swapping the *wiring* is free; capability isn't — a model that can't tool-call will still fail, so keep your evals running across models.)
+
 **Structured output** — ask for a type and get it back parsed:
 
 ```python
@@ -197,7 +210,7 @@ await agent.resume(branch, approve=False)  # continue the branch independently �
 
 ## Status
 
-**Phases 0–2 shipped** — the core loop, context engineering, model reliability (**Anthropic · OpenAI · Gemini + any OpenAI-compatible provider**, one `Model` Protocol), streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`, time-travel) are all live and tested (`uv run pytest` → 258 passing).
+**Phases 0–2 shipped** — the core loop, context engineering, model reliability (**Anthropic · OpenAI · Gemini + any OpenAI-compatible provider**, one `Model` Protocol), streaming, evals, memory (with `reflect()` consolidation), hooks + permission policies, prompt-caching, and **the durable seam** (checkpoint/resume, human-in-the-loop, `ctx.deps`, time-travel) are all live and tested (`uv run pytest` → 266 passing).
 
 A *"don't limit the user"* hardening pass (Plan 16, benchmarked against LangGraph + Pydantic AI) then added the escape hatches a real user hits in the first hour — provider/sampling params + `extra_body`/`extra_headers`, `Retry(feedback)` self-healing tools + output validators, `tool_from_schema` for raw/MCP tools, read-only `ctx` enrichment (usage/messages/model/step), richer resume (edit-args / deny-message / skip), the `should_continue` steering hook, and `merge_messages`/`RemoveMessage` for safe compaction — **all additive (byte-identical when unused)**.
 
