@@ -46,4 +46,7 @@ def init_model(spec: str):
     if provider == "anthropic":
         from verso.model.anthropic import AnthropicModel
         return AnthropicModel(model_id)
-    raise ValueError(f"unknown provider '{provider}' (Phase 0 supports 'anthropic')")
+    if provider == "openai":
+        from verso.model.openai import OpenAIModel
+        return OpenAIModel(model_id)
+    raise ValueError(f"unknown provider '{provider}' (supports 'anthropic'|'openai')")

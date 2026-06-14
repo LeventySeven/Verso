@@ -9,6 +9,7 @@ dependencies = ["pydantic>=2.7", "anthropic>=0.40"]
 dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.6", "sqlite-vec>=0.1.9"]
 evals = ["langfuse>=2", "autoevals>=0.0.100", "braintrust>=0.0.150"]
 vec = ["sqlite-vec>=0.1.9"]   # optional ANN index backend (SqliteVecBackend); brute-force works without it
+openai = ["openai>=1.40"]     # optional OpenAIModel adapter (Chat Completions); reached via init_model("openai:...")
 
 [build-system]
 requires = ["hatchling"]
