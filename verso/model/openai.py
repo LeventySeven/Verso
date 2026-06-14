@@ -11,6 +11,11 @@ from verso.types import Usage
 class OpenAIModel:
     """Chat Completions adapter, mirroring :class:`AnthropicModel` behind the ``Model`` Protocol.
 
+    Works with ANY OpenAI-compatible endpoint — not just OpenAI. Groq, OpenRouter, Together,
+    Fireworks, DeepSeek, xAI (Grok), Mistral, and local servers (Ollama, vLLM) all speak the same
+    Chat Completions wire format at a different ``base_url`` + API key. Point this model at one by
+    passing ``base_url=`` + ``api_key=``, or use the registry shortcut ``init_model("groq:…")``.
+
     The client is lazy and injectable: pass ``client=`` (used by tests) or let it construct an
     ``AsyncOpenAI`` on first use. Sampling params follow OMIT discipline — only keys the user set
     are sent, so an unconfigured model is byte-identical to the minimal request. ``extra_body`` /
@@ -21,11 +26,14 @@ class OpenAIModel:
     framework wraps ``complete()`` for streaming.
     """
 
-    def __init__(self, model_id: str, *, client: Any = None, max_tokens: int | None = None,
+    def __init__(self, model_id: str, *, client: Any = None, base_url: str | None = None,
+                 api_key: str | None = None, max_tokens: int | None = None,
                  temperature: float | None = None, top_p: float | None = None,
                  stop: list[str] | None = None, extra_body: dict | None = None,
                  extra_headers: dict | None = None):
         self.model_id = model_id
+        self.base_url = base_url
+        self.api_key = api_key
         self.max_tokens = max_tokens
         self.temperature = temperature
         self.top_p = top_p
@@ -38,7 +46,12 @@ class OpenAIModel:
     def client(self) -> Any:
         if self._client is None:
             from openai import AsyncOpenAI
-            self._client = AsyncOpenAI()
+            opts: dict[str, Any] = {}
+            if self.base_url:
+                opts["base_url"] = self.base_url
+            if self.api_key:
+                opts["api_key"] = self.api_key
+            self._client = AsyncOpenAI(**opts)
         return self._client
 
     def _to_openai_messages(self, messages: Sequence[Message], system: str | None) -> list[dict]:
