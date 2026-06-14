@@ -10,9 +10,18 @@ DEFAULT_MAX_TOKENS = 4096
 
 
 class AnthropicModel:
-    def __init__(self, model_id: str, *, client: Any = None, max_tokens: int = DEFAULT_MAX_TOKENS):
+    def __init__(self, model_id: str, *, client: Any = None, max_tokens: int = DEFAULT_MAX_TOKENS,
+                 temperature: float | None = None, top_p: float | None = None,
+                 stop_sequences: list[str] | None = None, thinking: dict | None = None,
+                 extra_body: dict | None = None, extra_headers: dict | None = None):
         self.model_id = model_id
         self.max_tokens = max_tokens
+        self.temperature = temperature
+        self.top_p = top_p
+        self.stop_sequences = stop_sequences
+        self.thinking = thinking
+        self.extra_body = extra_body
+        self.extra_headers = extra_headers
         self._client = client  # injected in tests; created lazily in prod
 
     @property
@@ -62,6 +71,14 @@ class AnthropicModel:
             # No system prompt → move the single breakpoint to the last tool so the tool prefix still caches.
             anthropic_tools[-1] = {**anthropic_tools[-1], "cache_control": {"type": "ephemeral"}}
             kwargs["tools"] = anthropic_tools
+        for key, val in (("temperature", self.temperature), ("top_p", self.top_p),
+                         ("stop_sequences", self.stop_sequences), ("thinking", self.thinking)):
+            if val is not None:
+                kwargs[key] = val
+        if self.extra_body:
+            kwargs["extra_body"] = self.extra_body
+        if self.extra_headers:
+            kwargs["extra_headers"] = self.extra_headers
         resp = await self.client.messages.create(**kwargs)
 
         text_parts: list[str] = []
