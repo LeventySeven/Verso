@@ -32,7 +32,7 @@ class Agent:
                  instructions: str | None = None, max_steps: int = 25,
                  max_context_tokens: int | None = None, hooks: "Hooks | None" = None,
                  checkpointer: object | None = None, deps: object | None = None,
-                 max_tool_retries: int = 2):
+                 max_tool_retries: int = 2, tool_output_budget: int | None = None):
         self.model = _resolve(model)
         self.tools = list(tools)
         self.instructions = instructions
@@ -42,6 +42,7 @@ class Agent:
         self.checkpointer = checkpointer
         self.deps = deps
         self.max_tool_retries = max_tool_retries
+        self.tool_output_budget = tool_output_budget
 
     def inspect(self, task: str) -> ContextBundle:
         """Return the exact ContextBundle the model will receive for `task` (turn 1)."""
@@ -53,7 +54,7 @@ class Agent:
         # Always create the context; when checkpointer is None, store is None, so _checkpoint no-ops
         # and every durable branch (gated on ctx.store is not None) stays unreachable → byte-identical.
         ctx = RunContext(trace_id=uuid.uuid4().hex, deps=self.deps, store=self.checkpointer,
-                         model=getattr(m, "model_id", ""))
+                         model=getattr(m, "model_id", ""), tool_output_budget=self.tool_output_budget)
         return await run_loop(m, self.tools, task, max_steps=self.max_steps,
                               instructions=self.instructions,
                               max_context_tokens=self.max_context_tokens,
@@ -69,7 +70,7 @@ class Agent:
         # (matches _run/stream) — otherwise the re-dispatched tool + every later step sees ctx.model == "".
         m = _resolve(model) if model is not None else self.model
         ctx = RunContext(trace_id=token, deps=self.deps, store=self.checkpointer,
-                         model=getattr(m, "model_id", ""))
+                         model=getattr(m, "model_id", ""), tool_output_budget=self.tool_output_budget)
         return await resume_loop(m, self.tools, ctx, approve, answer=answer,
                                  override_args=override_args, deny_message=deny_message, skip=skip,
                                  max_steps=self.max_steps,
@@ -142,7 +143,7 @@ class Agent:
         # streaming is tactical (durable resume is a later seam) → ctx carries deps + trace_id for
         # ctx-aware hooks, but store=None (no checkpoint/pause on the stream path).
         ctx = RunContext(trace_id=uuid.uuid4().hex, deps=self.deps, store=None,
-                         model=getattr(m, "model_id", ""))
+                         model=getattr(m, "model_id", ""), tool_output_budget=self.tool_output_budget)
         async for ev in run_stream(m, self.tools, task, max_steps=self.max_steps,
                                    instructions=self.instructions,
                                    max_context_tokens=self.max_context_tokens,

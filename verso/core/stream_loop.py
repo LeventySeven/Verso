@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, AsyncIterator, Sequence
 
 from verso.context.prune import prune
-from verso.core.loop import _format_result, build_bundle
+from verso.core.loop import _format_result, _truncate_tool_output, build_bundle
 from verso.durable.context import Paused
 from verso.model.base import Message, Model, ModelResponse
 from verso.model.streaming import iter_model_stream
@@ -102,6 +102,8 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
                     content = _format_result(res.data) if res.ok else f"Error: {res.error}"
                     ok = res.ok
             content = await hooks.run_post_tool((tc.name, tc.arguments), content, ctx=ctx)
+            if ctx is not None and ctx.tool_output_budget:
+                content = _truncate_tool_output(content, ctx.tool_output_budget)
             yield StreamEvent(type=EventType.TOOL_RESULT, tool=tc.name, ok=ok, content=content)
             if tc.name == "done" and ok:
                 result = AgentResult(output=content, stop_reason=StopReason.DONE, usage=usage, steps=step)

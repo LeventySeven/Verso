@@ -27,6 +27,13 @@ def _format_result(data) -> str:
         return str(data)
 
 
+def _truncate_tool_output(s: str, budget: int) -> str:
+    if budget <= 0 or len(s) <= budget:
+        return s
+    half = budget // 2
+    return f"{s[:half]}\n...[truncated {len(s) - budget} chars]...\n{s[-half:]}"
+
+
 def build_bundle(tools: Sequence[Tool], task: str, instructions: str | None) -> ContextBundle:
     return ContextBundle(instructions=instructions,
                          history=[Message(role="user", content=task)],
@@ -142,6 +149,8 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
                         await hooks.run_on_stop(final, ctx=ctx)
                         return final
             content = await hooks.run_post_tool((tc.name, tc.arguments), content, ctx=ctx)
+            if ctx is not None and ctx.tool_output_budget:
+                content = _truncate_tool_output(content, ctx.tool_output_budget)
             bundle.history.append(Message(role="tool", content=content, tool_call_id=tc.id, name=tc.name))
 
         _checkpoint(ctx, bundle, task, usage, step)   # per-step crash-recovery checkpoint (no pending)
@@ -215,6 +224,8 @@ async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", ap
                 content = deny_message or f"Tool '{tc_name}' was denied by the human reviewer; it did not run."
         from verso.safety.hooks import Hooks
         content = await (hooks or Hooks()).run_post_tool((tc_name, args), content, ctx=ctx)
+        if ctx is not None and ctx.tool_output_budget:   # parity with _drive: budget the re-dispatched result too
+            content = _truncate_tool_output(content, ctx.tool_output_budget)
         bundle.history.append(Message(role="tool", content=content, tool_call_id=tc_id, name=tc_name))
     return await _drive(model, tools, cp.task, bundle, usage, cp.step + 1, max_steps,
                         max_context_tokens=max_context_tokens, hooks=hooks, ctx=ctx)

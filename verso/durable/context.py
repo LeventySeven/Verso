@@ -54,3 +54,4 @@ class RunContext(Generic[T]):
     model: str = ""                                     # read-only view: the model id driving this run ("" if unknown)
     store: object | None = None        # CheckpointStore | None — typed as object to avoid an import cycle
     hitl: Hitl = field(default_factory=Hitl)
+    tool_output_budget: int | None = None   # None = no-op; if set, middle-truncate oversized tool RESULTS

@@ -22,6 +22,7 @@ from verso.safety.hooks import Hooks, PermissionDecision
 from verso.safety.policy import (
     PermissionPolicy, PermissionRule, allow_all, ask_every, ask_once, confidence_router,
 )
+from verso.safety.reinforce import reinforce_objective
 from verso.durable import RunContext, InMemoryCheckpointStore, SqliteCheckpointStore
 
 __version__ = "0.0.1"
@@ -38,6 +39,7 @@ __all__ = [
     "Memory", "MemoryType",
     "Hooks", "PermissionDecision",
     "PermissionPolicy", "PermissionRule", "allow_all", "ask_every", "ask_once", "confidence_router",
+    "reinforce_objective",
     "RunContext", "InMemoryCheckpointStore", "SqliteCheckpointStore",
 ]
 
