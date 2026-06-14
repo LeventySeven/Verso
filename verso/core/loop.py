@@ -84,6 +84,8 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
         resp = await model.complete(bundle.to_messages(), bundle.tools, system=bundle.system)
         await hooks.run_post_model(resp, ctx=ctx)
         usage = usage + resp.usage
+        if ctx is not None:
+            ctx.step, ctx.usage, ctx.messages = step, usage, bundle.history
 
         if not resp.tool_calls:
             result = AgentResult(output=resp.text, stop_reason=StopReason.END_TURN,

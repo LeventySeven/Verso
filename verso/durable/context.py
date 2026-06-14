@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Generic, TypeVar
 
+from verso.types import Usage
+
 T = TypeVar("T")
 
 
@@ -47,5 +49,8 @@ class RunContext(Generic[T]):
     trace_id: str
     deps: T | None = None
     step: int = 0
+    usage: Usage = field(default_factory=Usage)        # read-only view: cumulative usage at the tool's/hook's turn
+    messages: list = field(default_factory=list)        # read-only view: a live ref to the run's history
+    model: str = ""                                     # read-only view: the model id driving this run ("" if unknown)
     store: object | None = None        # CheckpointStore | None — typed as object to avoid an import cycle
     hitl: Hitl = field(default_factory=Hitl)

@@ -49,6 +49,8 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
 
         text = "".join(text_parts)
         resp = ModelResponse(text=text, tool_calls=tool_calls, usage=turn_usage)
+        if ctx is not None:
+            ctx.step, ctx.usage, ctx.messages = step, usage, bundle.history
         await hooks.run_post_model(resp, ctx=ctx)
         if not tool_calls:
             result = AgentResult(output=text, stop_reason=StopReason.END_TURN, usage=usage, steps=step)
@@ -73,7 +75,7 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
             if t is None:
                 content, ok = f"Error: unknown tool '{tc.name}'.", False
             else:
-                res = await dispatch(t, tc.arguments)
+                res = await dispatch(t, tc.arguments, ctx=ctx)
                 content = _format_result(res.data) if res.ok else f"Error: {res.error}"
                 ok = res.ok
             content = await hooks.run_post_tool((tc.name, tc.arguments), content, ctx=ctx)
