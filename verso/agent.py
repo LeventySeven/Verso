@@ -65,8 +65,11 @@ class Agent:
         if self.checkpointer is None:
             raise ValueError("resume requires an Agent constructed with a checkpointer")
         # model=None ⇒ self.model; a paused/forked run can resume on a different model.
+        # Resolve the model BEFORE building the ctx so ctx.model is populated for the whole resumed run
+        # (matches _run/stream) — otherwise the re-dispatched tool + every later step sees ctx.model == "".
         m = _resolve(model) if model is not None else self.model
-        ctx = RunContext(trace_id=token, deps=self.deps, store=self.checkpointer)
+        ctx = RunContext(trace_id=token, deps=self.deps, store=self.checkpointer,
+                         model=getattr(m, "model_id", ""))
         return await resume_loop(m, self.tools, ctx, approve, answer=answer,
                                  override_args=override_args, deny_message=deny_message, skip=skip,
                                  max_steps=self.max_steps,

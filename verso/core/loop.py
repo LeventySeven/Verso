@@ -114,7 +114,7 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
                                         HumanRequest(prompt=f"Approve tool '{tc.name}' with args {tc.arguments}?",
                                                      tool_name=tc.name, tool_call_id=tc.id, kind="approve"))
                 else:
-                    content = f"Tool '{tc.name}' was {decision.value} by policy; it did not run."
+                    content = f"Tool '{tc.name}' was {getattr(decision, 'value', decision)} by policy; it did not run."
                     content = await hooks.run_post_tool((tc.name, tc.arguments), content, ctx=ctx)
                     bundle.history.append(Message(role="tool", content=content, tool_call_id=tc.id, name=tc.name))
                     continue
@@ -170,11 +170,33 @@ async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", ap
         tool_map = {t.name: t for t in tools}
         # recover the held tool's arguments from the assistant turn already in history (bind once, always)
         args = next((c.arguments for m in reversed(bundle.history) for c in m.tool_calls if c.id == tc_id), {})
+        # populate the ctx views the re-dispatched tool will read (mirror how _drive seeds them per step):
+        # without this the re-run tool sees step=0, usage=Usage(0,0), messages=[] instead of the resumed state.
+        if ctx is not None:
+            ctx.step, ctx.usage, ctx.messages = cp.step, usage, bundle.history
+
+        async def _redispatch(t, call_args):
+            # Re-run the held tool. A second pause (the tool calls ctx.hitl.request again) is control flow,
+            # not an error: re-checkpoint with the new pending and surface PAUSED instead of crashing the host.
+            try:
+                return await dispatch(t, call_args, ctx=ctx)
+            except Paused as p:
+                p.request.tool_name = p.request.tool_name or tc_name
+                p.request.tool_call_id = p.request.tool_call_id or tc_id
+                _checkpoint(ctx, bundle, cp.task, usage, cp.step, pending=p.request)
+                paused = AgentResult(output="", stop_reason=StopReason.PAUSED, usage=usage, steps=cp.step,
+                                     resume_token=ctx.trace_id, pending=p.request)
+                from verso.safety.hooks import Hooks as _Hooks
+                await (hooks or _Hooks()).run_on_stop(paused, ctx=ctx)
+                return paused
+
         if cp.pending.kind == "input":
             # tool-initiated pause: pre-load the human's answer, then RE-RUN the tool (idempotent up to the request)
             ctx.hitl._resolve(cp.pending.key, answer)
             if tc_name in tool_map:
-                res = await dispatch(tool_map[tc_name], args, ctx=ctx)
+                res = await _redispatch(tool_map[tc_name], args)
+                if isinstance(res, AgentResult):
+                    return res                          # re-paused → surface PAUSED (do not append a tool result)
                 content = _format_result(res.data) if res.ok else f"Error: {res.error}"
             else:
                 content = f"Error: unknown tool '{tc_name}'."
@@ -183,7 +205,9 @@ async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", ap
             if skip:
                 content = f"Tool '{tc_name}' was skipped by the reviewer."
             elif approve and tc_name in tool_map:
-                res = await dispatch(tool_map[tc_name], override_args if override_args is not None else args, ctx=ctx)
+                res = await _redispatch(tool_map[tc_name], override_args if override_args is not None else args)
+                if isinstance(res, AgentResult):
+                    return res                          # re-paused → surface PAUSED (do not append a tool result)
                 content = _format_result(res.data) if res.ok else f"Error: {res.error}"
             elif approve:
                 content = f"Error: unknown tool '{tc_name}'."
