@@ -15,6 +15,7 @@ class SpanRecord:
     ok: bool | None = None         # tool ok (kind="tool")
     content: str | None = None     # tool result text (kind="tool")
     step: int | None = None        # kind="step"
+    args: dict | None = None       # tool-call arguments (kind="tool"; from the paired TOOL_START)
 
 
 @dataclass
@@ -33,12 +34,16 @@ class VersoSpan:
     @classmethod
     async def capture(cls, agent, task: str, *, trace_id: str | None = None) -> "VersoSpan":
         span = cls(trace_id=trace_id or uuid.uuid4().hex)
+        pending_args: dict | None = None    # TOOL_START is emitted immediately before its paired TOOL_RESULT
         async for ev in agent.stream(task):
             if ev.type == EventType.STEP:
                 span.records.append(SpanRecord(kind="step", step=ev.step))
                 span.steps = ev.step or span.steps
+            elif ev.type == EventType.TOOL_START:
+                pending_args = ev.arguments
             elif ev.type == EventType.TOOL_RESULT:
-                span.records.append(SpanRecord(kind="tool", name=ev.tool, ok=ev.ok, content=ev.content))
+                span.records.append(SpanRecord(kind="tool", name=ev.tool, ok=ev.ok, content=ev.content, args=pending_args))
+                pending_args = None
             elif ev.type == EventType.DONE and ev.result is not None:
                 r = ev.result
                 span.output, span.stop_reason = r.output, r.stop_reason.value
@@ -54,6 +59,11 @@ class VersoSpan:
 
     def tool_names(self) -> list[str]:
         return [r.name for r in self.records if r.kind == "tool" and r.name]
+
+    def tool_calls(self) -> list[tuple[str | None, dict | None, bool | None, str | None]]:
+        """The ordered tool PATH — (name, args, ok, content) per tool record. Process-level evals
+        assert on this (did it call the right tool with the right args), not just the final output."""
+        return [(r.name, r.args, r.ok, r.content) for r in self.records if r.kind == "tool"]
 
     def step_pass_rate(self) -> float:
         tools = [r for r in self.records if r.kind == "tool"]
@@ -91,5 +101,6 @@ class VersoScore:
     name: str
     passed: bool
     value: float = 0.0             # judge score in [0,1]; assertions use 1.0/0.0
-    kind: str = "assertion"        # "assertion" (deterministic, preferred) | "judge" (fallback)
+    kind: str = "assertion"        # "assertion" (deterministic, preferred) | "judge" (fallback) | "trace"
     detail: str = ""
+    divergence: float = 0.0        # panel disagreement (std-dev of member judge values); 0.0 single/agreement
