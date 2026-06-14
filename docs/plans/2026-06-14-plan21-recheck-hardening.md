@@ -4,6 +4,8 @@
 
 **Done:** `uv run pytest -q` green + `uv run ruff check verso tests` clean; every prior test passes UNMODIFIED; each fix gets a regression test. 266 currently pass.
 
+> **STATUS: SHIPPED 2026-06-14.** FIX-1 (core stream/resume parity — commit `1db687c`, rechecked APPROVED) + FIX-2/FIX-3 (model adapters, fail-open safety/eval holes, jsonish — commit `683b5a1`). **288 passed, 1 skipped; ruff clean.** +22 regression tests. The two security holes (post_tool redaction failing open; LLMJudge prompt injection) are closed and tested. Deferred ranks 6–8 + remaining minors carried into the next slate (`2026-06-14-next-slate.md`).
+
 ---
 
 ## Batch FIX-1 — harden the streaming + resume mirrors  *(core: `stream_loop.py`, `loop.py` resume_loop, `agent.py` resume)*  [Important×4]
