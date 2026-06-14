@@ -119,10 +119,10 @@ def parse(text: str) -> Any:
         seen.append(cand)
         try:
             return json.loads(cand)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, RecursionError):
             pass
         try:
             return json.loads(_light_fix(cand))
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, RecursionError):
             pass
     raise JsonishError(f"could not parse JSON from text: {text[:200]!r}")

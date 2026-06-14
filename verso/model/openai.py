@@ -4,8 +4,22 @@ import json
 from typing import Any, Sequence
 
 from verso.model.base import Message, ModelResponse, ToolCall
+from verso.tools.jsonish import JsonishError, parse as _jsonish_parse
 from verso.tools.tool import Tool
 from verso.types import Usage
+
+
+def _parse_tool_args(raw: str | None) -> dict:
+    """Tolerantly parse OpenAI tool-call arguments: strict JSON first (the common case), then the
+    lenient jsonish recovery (small/compatible models emit trailing commas etc.). A non-object result
+    or total failure degrades to {} rather than crashing complete()."""
+    if not raw:
+        return {}
+    try:
+        v = _jsonish_parse(raw)
+    except JsonishError:
+        return {}
+    return v if isinstance(v, dict) else {}
 
 
 class OpenAIModel:
@@ -100,9 +114,12 @@ class OpenAIModel:
         msg = resp.choices[0].message
         text = msg.content or ""
         tool_calls = [
-            ToolCall(id=tc.id, name=tc.function.name,
-                     arguments=json.loads(tc.function.arguments) if tc.function.arguments else {})
+            ToolCall(id=tc.id, name=tc.function.name, arguments=_parse_tool_args(tc.function.arguments))
             for tc in (getattr(msg, "tool_calls", None) or [])
         ]
-        usage = Usage(input_tokens=resp.usage.prompt_tokens, output_tokens=resp.usage.completion_tokens)
+        # some OpenAI-compatible servers (vLLM/Ollama/proxies) return usage=null on completions
+        u = resp.usage
+        usage = (Usage(input_tokens=getattr(u, "prompt_tokens", 0) or 0,
+                       output_tokens=getattr(u, "completion_tokens", 0) or 0)
+                 if u is not None else Usage())
         return ModelResponse(text=text, tool_calls=tool_calls, usage=usage)

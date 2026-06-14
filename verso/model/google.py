@@ -74,7 +74,11 @@ class GoogleModel:
 
         text_parts: list[str] = []
         tool_calls: list[ToolCall] = []
-        for part in resp.candidates[0].content.parts:
+        # Gemini returns zero/None candidates on a safety/recitation block (and content/parts can be None)
+        cands = resp.candidates or []
+        parts = (cands[0].content.parts
+                 if cands and cands[0].content and getattr(cands[0].content, "parts", None) else [])
+        for part in parts:
             if getattr(part, "text", None):
                 text_parts.append(part.text)
             fc = getattr(part, "function_call", None)

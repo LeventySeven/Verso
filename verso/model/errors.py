@@ -36,6 +36,8 @@ def classify(exc: BaseException) -> FailureKind:
         return FailureKind.CONTEXT_WINDOW
     if (isinstance(status, int) and 500 <= status < 600) \
             or isinstance(exc, (TimeoutError, ConnectionError)) \
+            or type(exc).__name__ in ("APITimeoutError", "APIConnectionError") \
             or "timeout" in msg or "timed out" in msg or "connection" in msg:
+        # the SDK timeout/connection types do NOT subclass the builtins, so match by name too
         return FailureKind.TRANSIENT
     return FailureKind.OTHER

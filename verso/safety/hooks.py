@@ -64,7 +64,9 @@ class Hooks:
 
     async def run_post_tool(self, call: ToolCallView, content: str, ctx=None) -> str:
         for h in self.post_tool:                      # reinforcement channel: may rewrite the result
-            content = await _fire(h, (call, content), ctx) or content
+            out = await _fire(h, (call, content), ctx)
+            if out is not None:                       # None => passthrough; "" => deliberate redaction (don't fail open)
+                content = out
         return content
 
     async def run_on_stop(self, result, ctx=None) -> None:
