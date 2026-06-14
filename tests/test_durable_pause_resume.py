@@ -119,6 +119,9 @@ async def test_resume_deny_message_is_fed_back():
     paused = await agent.run("email x")
     resumed = await agent.resume(paused.resume_token, approve=False, deny_message="use the sandbox instead")
     assert resumed.output == "done" and RAN == []
+    # the custom message must actually reach the model on the continuation turn (not the default denial)
+    last_msgs = agent.model.calls[-1][0]
+    assert any(m.role == "tool" and m.content == "use the sandbox instead" for m in last_msgs)
 
 
 async def test_resume_skip_continues_without_running_the_tool():

@@ -71,5 +71,15 @@ agent = Agent(model=..., tools=[...], hooks=Hooks(should_continue=keep_going))
 result = await agent.run(task)              # ends with StopReason.END_TURN when the cap trips
 ```
 
+The predicate may also declare a `ctx` parameter — the `RunContext` is injected
+when asked for, so you can steer on live run state (e.g. stop once the token
+budget is spent) instead of an external counter:
+
+```python
+def within_budget(bundle, ctx):            # ctx injected because the predicate names it
+    spent = ctx.usage.input_tokens + ctx.usage.output_tokens
+    return spent < 50_000                   # halt cleanly once the run has burned its budget
+```
+
 That is the whole story: ordinary async Python for between-run control flow, one
 hook for within-run steering. No graph required.

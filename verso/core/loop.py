@@ -1,6 +1,5 @@
 # verso/core/loop.py
 from __future__ import annotations
-import inspect
 import json
 from typing import TYPE_CHECKING, Sequence
 
@@ -81,15 +80,11 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
     retries: dict[str, int] = {}
 
     for step in range(start_step, max_steps + 1):
-        if hooks.should_continue is not None:
-            cont = hooks.should_continue(bundle)
-            if inspect.isawaitable(cont):
-                cont = await cont
-            if not cont:
-                last = next((m.content for m in reversed(bundle.history) if m.role == "assistant" and m.content), "")
-                result = AgentResult(output=last, stop_reason=StopReason.END_TURN, usage=usage, steps=step - 1)
-                await hooks.run_on_stop(result, ctx=ctx)
-                return result
+        if not await hooks.run_should_continue(bundle, ctx=ctx):
+            last = next((m.content for m in reversed(bundle.history) if m.role == "assistant" and m.content), "")
+            result = AgentResult(output=last, stop_reason=StopReason.END_TURN, usage=usage, steps=step - 1)
+            await hooks.run_on_stop(result, ctx=ctx)
+            return result
         if max_context_tokens is not None and bundle.estimate_tokens() > max_context_tokens:
             bundle.history = prune(bundle.history)
 

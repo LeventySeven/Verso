@@ -45,7 +45,7 @@ class Hooks:
     post_tool: list[Callable[[ToolCallView, str], Any]] = field(default_factory=list)  # (call, content) -> content
     on_stop: list[Callable[[Any], Any]] = field(default_factory=list)           # (result) -> None
     ask: Callable[[ToolCallView], bool] | None = None                           # ASK resolver (Phase 1)
-    should_continue: Callable[[Any], Any] | None = None                         # (bundle) -> bool; stop the loop when False
+    should_continue: Callable[..., Any] | None = None                           # (bundle[, ctx]) -> bool; stop the loop when False
 
     async def run_pre_model(self, bundle, ctx=None) -> None:
         for h in self.pre_model:
@@ -70,3 +70,10 @@ class Hooks:
     async def run_on_stop(self, result, ctx=None) -> None:
         for h in self.on_stop:
             await _fire(h, (result,), ctx)
+
+    async def run_should_continue(self, bundle, ctx=None) -> bool:
+        # unset → always continue (byte-identical no-op). Routed through _fire so a predicate that
+        # declares `ctx` can steer on live run state (ctx.usage / ctx.deps) — e.g. stop on a token budget.
+        if self.should_continue is None:
+            return True
+        return bool(await _fire(self.should_continue, (bundle,), ctx))
