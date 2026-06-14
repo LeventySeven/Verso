@@ -10,6 +10,7 @@ from verso.durable.context import HumanRequest, Paused, RunContext  # noqa: F401
 from verso.durable.serde import msg_from_dict, msg_to_dict
 from verso.model.base import Message, Model
 from verso.tools.dispatch import dispatch
+from verso.tools.errors import Retry
 from verso.tools.tool import Tool
 from verso.types import AgentResult, StopReason, Usage
 
@@ -62,19 +63,21 @@ async def _pause(ctx, bundle, task, usage, step, hooks, resp, tc, request) -> Ag
 async def run_loop(model: Model, tools: Sequence[Tool], task: str,
                    max_steps: int = 25, instructions: str | None = None,
                    max_context_tokens: int | None = None, hooks: "Hooks | None" = None,
-                   ctx: "RunContext | None" = None) -> AgentResult:
+                   ctx: "RunContext | None" = None, max_tool_retries: int = 2) -> AgentResult:
     bundle = build_bundle(tools, task, instructions)
     return await _drive(model, tools, task, bundle, Usage(), 1, max_steps,
-                        max_context_tokens=max_context_tokens, hooks=hooks, ctx=ctx)
+                        max_context_tokens=max_context_tokens, hooks=hooks, ctx=ctx,
+                        max_tool_retries=max_tool_retries)
 
 
 async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: ContextBundle,
                  usage: Usage, start_step: int, max_steps: int, *,
                  max_context_tokens: int | None = None, hooks: "Hooks | None" = None,
-                 ctx: "RunContext | None" = None) -> AgentResult:
+                 ctx: "RunContext | None" = None, max_tool_retries: int = 2) -> AgentResult:
     from verso.safety.hooks import Hooks, PermissionDecision
     hooks = hooks or Hooks()
     tool_map = {t.name: t for t in tools}
+    retries: dict[str, int] = {}
 
     for step in range(start_step, max_steps + 1):
         if max_context_tokens is not None and bundle.estimate_tokens() > max_context_tokens:
@@ -120,6 +123,12 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
                     if ctx is not None and ctx.store is not None:
                         return await _pause(ctx, bundle, task, usage, step, hooks, resp, tc, p.request)
                     content = f"Tool '{tc.name}' requested human input but this run is not durable; it did not pause."
+                except Retry as r:
+                    retries[tc.name] = retries.get(tc.name, 0) + 1
+                    if retries[tc.name] > max_tool_retries:
+                        content = f"Error: tool '{tc.name}' exceeded its retry budget ({max_tool_retries})."
+                    else:
+                        content = f"Retry: {r.feedback}"
                 else:
                     content = _format_result(result.data) if result.ok else f"Error: {result.error}"
                     if tc.name == "done" and result.ok:

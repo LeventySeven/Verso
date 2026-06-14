@@ -52,30 +52,42 @@ class Agent:
         return await resume_loop(self.model, self.tools, ctx, approve, answer=answer, max_steps=self.max_steps,
                                  max_context_tokens=self.max_context_tokens, hooks=self.hooks)
 
-    async def run(self, task: str, *, output_type: type | None = None) -> AgentResult:
+    async def run(self, task: str, *, output_type: type | None = None,
+                  validators: Sequence = (), max_output_retries: int = 1) -> AgentResult:
+        # output_type is None ⇒ return the result unchanged; validators require a typed output to run on.
         result = await self._run(task)
         if output_type is None:
             return result
-        try:
-            result.parsed = coerce(result.output, output_type)
-            return result
-        except CoercionError as first:
-            reask = (
-                f"{task}\n\nYour previous answer was:\n{result.output}\n\n"
-                f"That could not be parsed into the required format ({first}). "
-                "Reply with ONLY valid JSON matching the requested schema — no prose, no code fences."
-            )
-            retry = await self._run(reask)
+        from verso.tools.errors import Retry
+        current, attempts = result, 0
+        usage_total, steps_total = current.usage, current.steps
+        while True:
             try:
-                retry.parsed = coerce(retry.output, output_type)
-                retry.usage = result.usage + retry.usage
-                retry.steps = result.steps + retry.steps
-                return retry
-            except CoercionError as second:
-                name = getattr(output_type, "__name__", repr(output_type))
-                raise StructuredOutputError(
-                    f"could not produce {name} after one reask: {second}"
-                ) from second
+                parsed = coerce(current.output, output_type)
+                for validator in validators:
+                    validator(parsed)
+            except (CoercionError, ValueError, Retry) as e:
+                # Retry/ValueError from a validator and CoercionError from parsing all reask with feedback.
+                feedback = e.feedback if isinstance(e, Retry) else str(e)
+                if attempts >= max_output_retries:
+                    name = getattr(output_type, "__name__", repr(output_type))
+                    raise StructuredOutputError(
+                        f"could not produce {name} after {attempts} reask(s): {feedback}"
+                    ) from e
+                attempts += 1
+                reask = (
+                    f"{task}\n\nYour previous answer was:\n{current.output}\n\n"
+                    f"That was rejected: {feedback}. "
+                    "Reply with ONLY valid JSON matching the requested schema — no prose, no code fences."
+                )
+                current = await self._run(reask)
+                usage_total = usage_total + current.usage
+                steps_total = steps_total + current.steps
+                continue
+            current.parsed = parsed
+            current.usage = usage_total
+            current.steps = steps_total
+            return current
 
     async def stream(self, task: str) -> AsyncIterator[StreamEvent]:
         # streaming is tactical (durable resume is a later seam) → ctx carries deps + trace_id for

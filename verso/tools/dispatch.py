@@ -7,6 +7,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from verso.durable.context import Paused
+from verso.tools.errors import Retry
 from verso.tools.tool import Tool
 
 
@@ -34,5 +35,7 @@ async def dispatch(tool: Tool, arguments: dict[str, Any], ctx: object | None = N
         return ToolResult(ok=True, data=result)
     except Paused:
         raise                              # pause request → loop handles it (durable pause)
+    except Retry:
+        raise              # self-healing signal → the loop converts it to model-visible feedback
     except Exception as e:  # noqa: BLE001 — tool failures are data, not exceptions
         return ToolResult(ok=False, error=f"{type(e).__name__}: {e}")

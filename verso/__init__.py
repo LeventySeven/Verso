@@ -2,6 +2,7 @@
 from verso.agent import Agent
 from verso.tools.tool import tool, Tool, tool_from_schema
 from verso.tools.coerce import CoercionError, StructuredOutputError
+from verso.tools.errors import Retry
 from verso.types import AgentResult, StopReason, Usage
 from verso.model.base import Model, Message, ModelResponse, ToolCall
 from verso.context.bundle import ContextBundle
@@ -24,7 +25,7 @@ __version__ = "0.0.1"
 __all__ = [
     "Agent", "tool", "Tool", "tool_from_schema", "AgentResult", "StopReason", "Usage",
     "Model", "Message", "ModelResponse", "ToolCall", "init_model",
-    "CoercionError", "StructuredOutputError", "ContextBundle",
+    "CoercionError", "StructuredOutputError", "Retry", "ContextBundle",
     "FailoverModel", "AllCandidatesFailed", "RetryPolicy", "AttemptRecord",
     "call_with_retry", "FailureKind", "classify",
     "StreamEvent", "EventType",
