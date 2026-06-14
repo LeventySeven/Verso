@@ -7,6 +7,7 @@ from verso.durable.checkpoint import Checkpoint
 from verso.durable.context import HumanRequest
 
 DDL = "CREATE TABLE IF NOT EXISTS checkpoint (trace_id TEXT PRIMARY KEY, data TEXT NOT NULL)"
+DDL_HISTORY = "CREATE TABLE IF NOT EXISTS checkpoint_history (trace_id TEXT NOT NULL, step INTEGER NOT NULL, data TEXT NOT NULL, PRIMARY KEY (trace_id, step))"
 
 
 class SqliteCheckpointStore:
@@ -16,6 +17,7 @@ class SqliteCheckpointStore:
     def __init__(self, path: str = ":memory:"):
         self.db = sqlite3.connect(path)
         self.db.execute(DDL)
+        self.db.execute(DDL_HISTORY)
         self.db.commit()
 
     def save(self, cp: Checkpoint) -> None:
@@ -27,13 +29,12 @@ class SqliteCheckpointStore:
                                                "tool_name": p.tool_name, "tool_call_id": p.tool_call_id},
         })
         self.db.execute("INSERT OR REPLACE INTO checkpoint(trace_id, data) VALUES(?, ?)", (cp.trace_id, data))
+        self.db.execute("INSERT OR REPLACE INTO checkpoint_history(trace_id, step, data) VALUES(?,?,?)", (cp.trace_id, cp.step, data))
         self.db.commit()
 
-    def load(self, trace_id: str) -> Checkpoint | None:
-        row = self.db.execute("SELECT data FROM checkpoint WHERE trace_id=?", (trace_id,)).fetchone()
-        if row is None:
-            return None
-        d = json.loads(row[0])
+    @staticmethod
+    def _decode(data: str) -> Checkpoint:
+        d = json.loads(data)
         pend = d["pending"]
         return Checkpoint(
             trace_id=d["trace_id"], task=d["task"], instructions=d["instructions"],
@@ -41,6 +42,17 @@ class SqliteCheckpointStore:
             pending=None if pend is None else HumanRequest(**pend),
         )
 
+    def load(self, trace_id: str) -> Checkpoint | None:
+        row = self.db.execute("SELECT data FROM checkpoint WHERE trace_id=?", (trace_id,)).fetchone()
+        if row is None:
+            return None
+        return self._decode(row[0])
+
+    def history(self, trace_id: str) -> list[Checkpoint]:
+        rows = self.db.execute("SELECT data FROM checkpoint_history WHERE trace_id=? ORDER BY step", (trace_id,)).fetchall()
+        return [self._decode(r[0]) for r in rows]
+
     def delete(self, trace_id: str) -> None:
         self.db.execute("DELETE FROM checkpoint WHERE trace_id=?", (trace_id,))
+        self.db.execute("DELETE FROM checkpoint_history WHERE trace_id=?", (trace_id,))
         self.db.commit()

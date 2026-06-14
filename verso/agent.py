@@ -1,5 +1,6 @@
 # verso/agent.py
 from __future__ import annotations
+import dataclasses
 import uuid
 from typing import TYPE_CHECKING, AsyncIterator, Sequence
 
@@ -57,6 +58,28 @@ class Agent:
                                  override_args=override_args, deny_message=deny_message, skip=skip,
                                  max_steps=self.max_steps,
                                  max_context_tokens=self.max_context_tokens, hooks=self.hooks)
+
+    def history(self, token: str) -> list:
+        """The per-step checkpoint trajectory of a durable run (ascending step); [] if unknown."""
+        if self.checkpointer is None:
+            raise ValueError("history requires an Agent constructed with a checkpointer")
+        return self.checkpointer.history(token)
+
+    def fork(self, token: str, *, at_step: int | None = None) -> str:
+        """Branch a new run from `token`'s state at `at_step` (default: latest). Returns the new token.
+        Clones the checkpoint under a fresh trace_id; the original is untouched. Continue the branch with
+        resume(new_token, ...) — it re-runs from the fork point (no step-memoization)."""
+        if self.checkpointer is None:
+            raise ValueError("fork requires an Agent constructed with a checkpointer")
+        if at_step is None:
+            src = self.checkpointer.load(token)
+        else:
+            src = next((c for c in self.checkpointer.history(token) if c.step == at_step), None)
+        if src is None:
+            raise ValueError(f"no checkpoint to fork from token={token!r} at_step={at_step!r}")
+        new_token = uuid.uuid4().hex
+        self.checkpointer.save(dataclasses.replace(src, trace_id=new_token))
+        return new_token
 
     async def run(self, task: str, *, output_type: type | None = None,
                   validators: Sequence = (), max_output_retries: int = 1) -> AgentResult:
