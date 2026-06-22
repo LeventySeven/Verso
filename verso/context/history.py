@@ -44,7 +44,9 @@ def repair_history(history: Sequence[Message]) -> list[Message]:
       - a tool result with NO matching assistant tool_call   -> drop it (orphan)
       - a duplicate tool_call_id among results               -> keep the first
     Tool results are emitted right after the assistant turn that opened them, in tool_call order (already
-    true for a healthy history → the sequence is preserved). Returns a NEW list; never mutates `history`."""
+    true for a healthy fresh history → the sequence is preserved; a resume-shaped history whose results
+    arrived out of tool_call order is normalized to that order — benign, providers match by id). Returns a
+    NEW list; never mutates `history`."""
     results: dict[str, Message] = {}
     for m in history:
         if m.role == "tool" and m.tool_call_id is not None and m.tool_call_id not in results:

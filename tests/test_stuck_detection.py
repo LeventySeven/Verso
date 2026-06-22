@@ -64,3 +64,31 @@ def test_detect_stuck_is_pure_and_conservative():
     # 4 consecutive tool errors -> stuck
     he = [Message(role="tool", name="x", tool_call_id=str(i), content="Error: boom") for i in range(4)]
     assert detect_stuck(he, t) is not None
+
+
+def test_detect_stuck_requires_unchanged_result():
+    t = StuckThresholds()
+    same, poll = [], []
+    for i in range(4):
+        same.append(Message(role="assistant", tool_calls=[ToolCall(id=f"a{i}", name="x", arguments={"q": 1})]))
+        same.append(Message(role="tool", tool_call_id=f"a{i}", name="x", content="identical"))
+        poll.append(Message(role="assistant", tool_calls=[ToolCall(id=f"b{i}", name="x", arguments={"q": 1})]))
+        poll.append(Message(role="tool", tool_call_id=f"b{i}", name="x", content=f"status-{i}"))   # changes
+    assert detect_stuck(same, t) is not None      # same call + same result = doom-loop
+    assert detect_stuck(poll, t) is None          # same call + CHANGING result = progress (polling)
+
+
+async def test_polling_with_changing_results_is_not_stuck():
+    # a poll(id) tool whose result changes each call is progress, not a doom-loop — must NOT trip STUCK
+    state = {"n": 0}
+
+    @tool
+    def poll(id: str) -> str:
+        "Poll a job status."
+        state["n"] += 1
+        return f"status-{state['n']}"
+
+    fm = FakeModel([ModelResponse(text="", tool_calls=[ToolCall(id=f"p{i}", name="poll", arguments={"id": "x"})], usage=Usage())
+                    for i in range(6)] + [ModelResponse(text="ready", tool_calls=[], usage=Usage())])
+    r = await run_loop(fm, [poll], "poll until ready", max_steps=25)
+    assert r.stop_reason is StopReason.END_TURN    # changing results = progress, never STUCK
