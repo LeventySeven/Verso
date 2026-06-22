@@ -34,3 +34,4 @@ class AgentResult:
     parsed: object | None = None      # set when run(output_type=...) succeeds
     resume_token: str | None = None   # set when stop_reason is PAUSED; pass to Agent.resume(...)
     pending: object | None = None     # the HumanRequest awaiting an answer (typed object to avoid import cycle)
+    truncated: bool = False           # the terminating model response was cut off by max_tokens (partial output)

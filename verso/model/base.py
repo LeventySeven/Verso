@@ -31,6 +31,7 @@ class ModelResponse:
     text: str
     tool_calls: list[ToolCall]
     usage: Usage
+    truncated: bool = False   # provider stopped on a max-tokens cut (output is partial), not a natural end
 
 
 class Model(Protocol):

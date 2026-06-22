@@ -93,4 +93,5 @@ class AnthropicModel:
             text="".join(text_parts),
             tool_calls=tool_calls,
             usage=Usage(input_tokens=resp.usage.input_tokens, output_tokens=resp.usage.output_tokens),
+            truncated=getattr(resp, "stop_reason", None) == "max_tokens",
         )

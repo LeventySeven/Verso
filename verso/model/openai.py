@@ -122,4 +122,5 @@ class OpenAIModel:
         usage = (Usage(input_tokens=getattr(u, "prompt_tokens", 0) or 0,
                        output_tokens=getattr(u, "completion_tokens", 0) or 0)
                  if u is not None else Usage())
-        return ModelResponse(text=text, tool_calls=tool_calls, usage=usage)
+        truncated = getattr(resp.choices[0], "finish_reason", None) == "length"
+        return ModelResponse(text=text, tool_calls=tool_calls, usage=usage, truncated=truncated)

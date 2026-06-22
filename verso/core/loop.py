@@ -120,7 +120,7 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
 
         if not resp.tool_calls:
             result = AgentResult(output=resp.text, stop_reason=StopReason.END_TURN,
-                                 usage=usage, steps=step)
+                                 usage=usage, steps=step, truncated=resp.truncated)
             outcome = await hooks.run_on_stop(result, ctx=ctx)
             if outcome is not None and not outcome.passed and verify_count < hooks.max_verify_retries:
                 verify_count += 1
@@ -205,13 +205,16 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
         _checkpoint(ctx, bundle, task, usage, step)   # per-step crash-recovery checkpoint (no pending)
 
     output = ""
+    truncated = False
     if max_steps_policy == "generate":
         # opt-in grace call: one tool-less completion so a budget-exhausted run returns a best-effort
         # answer instead of '' (still stop_reason=MAX_STEPS — the run did hit the cap).
         grace = await model.complete(bundle.to_messages(), [], system=bundle.system)
         usage = usage + grace.usage
         output = grace.text
-    result = AgentResult(output=output, stop_reason=StopReason.MAX_STEPS, usage=usage, steps=max_steps)
+        truncated = grace.truncated
+    result = AgentResult(output=output, stop_reason=StopReason.MAX_STEPS, usage=usage,
+                         steps=max_steps, truncated=truncated)
     await hooks.run_on_stop(result, ctx=ctx)
     return result
 

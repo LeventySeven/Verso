@@ -86,9 +86,13 @@ class GoogleModel:
                 tool_calls.append(ToolCall(id=getattr(fc, "id", None) or fc.name,
                                            name=fc.name, arguments=dict(fc.args or {})))
         um = resp.usage_metadata
+        # finish_reason is a FinishReason enum (.name == "MAX_TOKENS") on the real SDK; tolerate a bare string too
+        fr = getattr(cands[0], "finish_reason", None) if cands else None
+        truncated = getattr(fr, "name", fr) == "MAX_TOKENS"
         return ModelResponse(
             text="".join(text_parts),
             tool_calls=tool_calls,
             usage=Usage(input_tokens=getattr(um, "prompt_token_count", 0) or 0,
                         output_tokens=getattr(um, "candidates_token_count", 0) or 0),
+            truncated=truncated,
         )

@@ -14,6 +14,7 @@ class StuckThresholds:
     `stuck_thresholds=None` to the loop to disable detection entirely (byte-identical to no detector)."""
     repeated_action: int = 4   # N consecutive assistant turns with the SAME (tool, args) signature
     tool_errors: int = 4       # N consecutive tool observations whose content is an error
+    alternating: int = 3       # N repeats of a 2-action A-B cycle with unchanged results (0 disables)
 
 
 def _sig(m: Message) -> str | None:
@@ -57,6 +58,15 @@ def detect_stuck(history: list[Message], thresholds: StuckThresholds) -> str | N
     keys = _turn_keys(history)
     if len(keys) >= thresholds.repeated_action and len(set(keys[-thresholds.repeated_action:])) == 1:
         return f"repeated the same tool call with the same result {thresholds.repeated_action}x (no progress)"
+    # (a2) a 2-action cycle: the last 2*alternating turns are a repeating [a, b] (a != b) with every
+    # a-result and b-result unchanged — an A-B-A-B doom-loop the period-1 check above misses. Polling
+    # (changing results) breaks the cycle keys, so it is not flagged, by the same logic as (a).
+    cyc = thresholds.alternating
+    if cyc and len(keys) >= 2 * cyc:
+        window = keys[-2 * cyc:]
+        a, b = window[0], window[1]
+        if a != b and all(window[i] == (a if i % 2 == 0 else b) for i in range(2 * cyc)):
+            return f"alternated between two tool calls {cyc}x with no progress"
     tool_msgs = [m for m in history if m.role == "tool"]
     if len(tool_msgs) >= thresholds.tool_errors and all(
         (m.content or "").startswith("Error:") for m in tool_msgs[-thresholds.tool_errors:]

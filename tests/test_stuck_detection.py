@@ -92,3 +92,56 @@ async def test_polling_with_changing_results_is_not_stuck():
                     for i in range(6)] + [ModelResponse(text="ready", tool_calls=[], usage=Usage())])
     r = await run_loop(fm, [poll], "poll until ready", max_steps=25)
     assert r.stop_reason is StopReason.END_TURN    # changing results = progress, never STUCK
+
+
+# --- alternating (period-2) doom-loop: the A-B-A-B cycle the period-1 detector misses ---
+
+def _cycle(n, *, change_results):
+    """n full A-B cycles: tool x then tool y, each with a (stable | changing) result."""
+    h = []
+    for i in range(n):
+        h.append(Message(role="assistant", tool_calls=[ToolCall(id=f"a{i}", name="x", arguments={"k": 1})]))
+        h.append(Message(role="tool", tool_call_id=f"a{i}", name="x", content=f"ra{i}" if change_results else "ra"))
+        h.append(Message(role="assistant", tool_calls=[ToolCall(id=f"b{i}", name="y", arguments={"k": 2})]))
+        h.append(Message(role="tool", tool_call_id=f"b{i}", name="y", content=f"rb{i}" if change_results else "rb"))
+    return h
+
+
+def test_alternating_cycle_with_stable_results_is_stuck():
+    t = StuckThresholds()                                  # default alternating threshold (3 cycles)
+    assert detect_stuck(_cycle(3, change_results=False), t) is not None
+
+
+def test_alternating_cycle_with_changing_results_is_not_stuck():
+    t = StuckThresholds()
+    assert detect_stuck(_cycle(3, change_results=True), t) is None    # changing results = progress
+
+
+def test_short_alternation_is_below_threshold():
+    t = StuckThresholds()
+    assert detect_stuck(_cycle(2, change_results=False), t) is None   # 2 cycles < threshold 3
+
+
+def test_alternating_can_be_disabled_by_threshold():
+    t = StuckThresholds(alternating=0)
+    assert detect_stuck(_cycle(4, change_results=False), t) is None   # 0 disables the period-2 check
+
+
+async def test_alternating_loop_stops_as_stuck_in_the_real_loop():
+    # the model oscillates between two no-op tools with identical results forever
+    @tool
+    def x(k: int) -> str:
+        "noop x"
+        return "ra"
+
+    @tool
+    def y(k: int) -> str:
+        "noop y"
+        return "rb"
+
+    seq = []
+    for i in range(8):
+        seq.append(ModelResponse(text="", tool_calls=[ToolCall(id=f"a{i}", name="x", arguments={"k": 1})], usage=Usage()))
+        seq.append(ModelResponse(text="", tool_calls=[ToolCall(id=f"b{i}", name="y", arguments={"k": 2})], usage=Usage()))
+    r = await run_loop(FakeModel(seq), [x, y], "oscillate", max_steps=25)
+    assert r.stop_reason is StopReason.STUCK and r.steps < 25
