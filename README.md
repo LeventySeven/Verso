@@ -214,6 +214,8 @@ await agent.resume(branch, approve=False)  # continue the branch independently �
 
 A *"don't limit the user"* hardening pass (Plan 16, benchmarked against LangGraph + Pydantic AI) then added the escape hatches a real user hits in the first hour — provider/sampling params + `extra_body`/`extra_headers`, `Retry(feedback)` self-healing tools + output validators, `tool_from_schema` for raw/MCP tools, read-only `ctx` enrichment (usage/messages/model/step), richer resume (edit-args / deny-message / skip), the `should_continue` steering hook, and `merge_messages`/`RemoveMessage` for safe compaction — **all additive (byte-identical when unused)**.
 
+A *residual deep-mine* (Plan 22 — a 54-agent pass over the un-digested research primaries vs shipped Verso; [`research/10_residual_mine/GAP_REPORT.md`](research/10_residual_mine/GAP_REPORT.md)) confirmed **no missing primitive category** and added the small consolidating hardeners it surfaced: **doom-loop/stuck detection** (`StopReason.STUCK`, default-on, conservative), an **opt-in grace call** at `max_steps` (`max_steps_policy="generate"`), **per-tool `idempotent`/`max_attempts`/`timeout_seconds`** (a non-idempotent tool is never auto-retried; a hung async tool can't eat the whole budget), a **`repair_history` resume-guard** (orphan tool-call/result repair so a crash-recovered run stays a valid provider payload), and two eval-moat additions — **`TrajectoryCheck`** (exact/in-order/any-order tool-path assertion) and **`LLMJudge(examples=…)`** few-shot calibration. **All additive (byte-identical when unused).**
+
 The full v1 design lives in **[`docs/PRD_v1.md`](docs/PRD_v1.md)**; the per-build plans in **[`docs/plans/`](docs/plans/)**.
 
 ## How this was built
