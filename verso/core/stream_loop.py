@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING, AsyncIterator, Sequence
 
 from verso.context.prune import prune
 from verso.core.loop import _format_result, _truncate_tool_output, build_bundle
+from verso.core.stuck import StuckThresholds, detect_stuck
 from verso.durable.context import Paused
 from verso.model.base import Message, Model, ModelResponse
 from verso.model.streaming import iter_model_stream
@@ -22,7 +23,8 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
                      max_steps: int = 25, instructions: str | None = None,
                      max_context_tokens: int | None = None,
                      hooks: "Hooks | None" = None, ctx: "RunContext | None" = None,
-                     max_tool_retries: int = 2) -> AsyncIterator[StreamEvent]:
+                     max_tool_retries: int = 2, max_steps_policy: str = "stop",
+                     stuck_thresholds: "StuckThresholds | None" = StuckThresholds()) -> AsyncIterator[StreamEvent]:
     from verso.safety.hooks import Hooks, PermissionDecision
     hooks = hooks or Hooks()
     bundle = build_bundle(tools, task, instructions)
@@ -33,6 +35,13 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
 
     for step in range(1, max_steps + 1):
         yield StreamEvent(type=EventType.STEP, step=step)
+        if stuck_thresholds is not None and detect_stuck(bundle.history, stuck_thresholds):
+            result = AgentResult(
+                output=next((m.content for m in reversed(bundle.history) if m.role == "assistant" and m.content), ""),
+                stop_reason=StopReason.STUCK, usage=usage, steps=step - 1)
+            await hooks.run_on_stop(result, ctx=ctx)
+            yield StreamEvent(type=EventType.DONE, result=result)
+            return
         if max_context_tokens is not None and bundle.estimate_tokens() > max_context_tokens:
             bundle.history = prune(bundle.history)
 
@@ -102,10 +111,13 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
                 try:
                     res = await dispatch(t, tc.arguments, ctx=ctx)
                 except Retry as r:
-                    # mirror _drive's per-tool retry budget: bound Retry by max_tool_retries, not just max_steps.
+                    # mirror _drive's per-tool retry budget: explicit max_attempts wins; else non-idempotent
+                    # tools get 0 retries (no auto re-run of a side effect); else the global max_tool_retries.
+                    allowed = (t.max_attempts - 1) if t.max_attempts is not None else (
+                        max_tool_retries if t.idempotent else 0)
                     retries[tc.name] = retries.get(tc.name, 0) + 1
-                    if retries[tc.name] > max_tool_retries:
-                        content = f"Error: tool '{tc.name}' exceeded its retry budget ({max_tool_retries})."
+                    if retries[tc.name] > allowed:
+                        content = f"Error: tool '{tc.name}' exceeded its retry budget ({allowed})."
                     else:
                         content = f"Retry: {r.feedback}"
                     ok = False
@@ -146,6 +158,13 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
         if reverify:
             continue   # re-drive after a vetoed DONE (bounded by max_verify_retries + max_steps)
 
-    result = AgentResult(output="", stop_reason=StopReason.MAX_STEPS, usage=usage, steps=max_steps)
+    output = ""
+    if max_steps_policy == "generate":
+        grace = await model.complete(bundle.to_messages(), [], system=bundle.system)
+        usage = usage + grace.usage
+        output = grace.text
+        if output:
+            yield StreamEvent(type=EventType.MESSAGE_DELTA, text=output)
+    result = AgentResult(output=output, stop_reason=StopReason.MAX_STEPS, usage=usage, steps=max_steps)
     await hooks.run_on_stop(result, ctx=ctx)
     yield StreamEvent(type=EventType.DONE, result=result)

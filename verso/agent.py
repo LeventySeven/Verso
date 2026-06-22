@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, AsyncIterator, Sequence
 from verso.context.bundle import ContextBundle
 from verso.core.loop import build_bundle, resume_loop, run_loop
 from verso.core.stream_loop import run_stream
+from verso.core.stuck import StuckThresholds
 from verso.durable.context import RunContext
 from verso.model.base import Model
 from verso.stream.events import StreamEvent
@@ -33,7 +34,8 @@ class Agent:
                  max_context_tokens: int | None = None, hooks: "Hooks | None" = None,
                  checkpointer: object | None = None, deps: object | None = None,
                  max_tool_retries: int = 2, tool_output_budget: int | None = None,
-                 trust_tier: str = "act"):
+                 trust_tier: str = "act", max_steps_policy: str = "stop",
+                 stuck_thresholds: "StuckThresholds | None" = StuckThresholds()):
         self.model = _resolve(model)
         self.tools = list(tools)
         # Trust as a construction-time capability boundary, not a call-time check: a "read"-tier agent
@@ -51,6 +53,8 @@ class Agent:
         self.deps = deps
         self.max_tool_retries = max_tool_retries
         self.tool_output_budget = tool_output_budget
+        self.max_steps_policy = max_steps_policy
+        self.stuck_thresholds = stuck_thresholds
 
     def inspect(self, task: str) -> ContextBundle:
         """Return the exact ContextBundle the model will receive for `task` (turn 1)."""
@@ -66,7 +70,9 @@ class Agent:
         return await run_loop(m, self.tools, task, max_steps=self.max_steps,
                               instructions=self.instructions,
                               max_context_tokens=self.max_context_tokens,
-                              hooks=self.hooks, ctx=ctx, max_tool_retries=self.max_tool_retries)
+                              hooks=self.hooks, ctx=ctx, max_tool_retries=self.max_tool_retries,
+                              max_steps_policy=self.max_steps_policy,
+                              stuck_thresholds=self.stuck_thresholds)
 
     async def resume(self, token: str, *, approve: bool = True, answer: object = None,
                      override_args: dict | None = None, deny_message: str | None = None,
@@ -82,7 +88,9 @@ class Agent:
         return await resume_loop(m, self.tools, ctx, approve, answer=answer,
                                  override_args=override_args, deny_message=deny_message, skip=skip,
                                  max_steps=self.max_steps,
-                                 max_context_tokens=self.max_context_tokens, hooks=self.hooks)
+                                 max_context_tokens=self.max_context_tokens, hooks=self.hooks,
+                                 max_steps_policy=self.max_steps_policy,
+                                 stuck_thresholds=self.stuck_thresholds)
 
     def history(self, token: str) -> list:
         """The per-step checkpoint trajectory of a durable run (ascending step); [] if unknown."""
@@ -155,7 +163,9 @@ class Agent:
         async for ev in run_stream(m, self.tools, task, max_steps=self.max_steps,
                                    instructions=self.instructions,
                                    max_context_tokens=self.max_context_tokens,
-                                   hooks=self.hooks, ctx=ctx, max_tool_retries=self.max_tool_retries):
+                                   hooks=self.hooks, ctx=ctx, max_tool_retries=self.max_tool_retries,
+                                   max_steps_policy=self.max_steps_policy,
+                                   stuck_thresholds=self.stuck_thresholds):
             yield ev
 
     @contextmanager

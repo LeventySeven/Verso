@@ -9,6 +9,7 @@ class StopReason(str, Enum):
     DONE = "done"              # model called the `done` tool to terminate with a result
     MAX_STEPS = "max_steps"    # loop hit the max_steps cap
     PAUSED = "paused"          # durable run paused for a human decision; resumable via resume_token
+    STUCK = "stuck"            # doom-loop detected (repeated identical action / error spiral) — honest early stop
     ERROR = "error"            # unrecoverable error (later phases add more reasons)
 
 

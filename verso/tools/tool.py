@@ -19,6 +19,11 @@ class Tool:
     privileged: bool = False      # sensitive/side-effecting (send_email, refund, write_file). A "read"-tier
                                   # Agent drops privileged tools at construction → they're structurally absent,
                                   # so untrusted input can't even request one (no call-time decision to reach).
+    idempotent: bool = True       # safe to auto-retry on a Retry signal? False (side-effecting) → no auto-retry
+                                  # (max_attempts=1): re-running a charge/email is a correctness bug. Orthogonal
+                                  # to `privileged` (trust boundary). Byte-identical when True (the default).
+    max_attempts: int | None = None   # explicit dispatch cap, overrides idempotent/max_tool_retries when set
+    timeout_seconds: float | None = None  # wall-clock cap for an async tool body (asyncio.wait_for); None = no cap
 
 
 def _build_args_model(fn: Callable[..., Any]) -> type:
@@ -37,7 +42,9 @@ def _build_args_model(fn: Callable[..., Any]) -> type:
 
 
 def tool(fn: Callable[..., Any] | None = None, *, name: str | None = None,
-         description: str | None = None, privileged: bool = False
+         description: str | None = None, privileged: bool = False,
+         idempotent: bool = True, max_attempts: int | None = None,
+         timeout_seconds: float | None = None
          ) -> Tool | Callable[[Callable[..., Any]], Tool]:
     def make(f: Callable[..., Any]) -> Tool:
         args_model = _build_args_model(f)
@@ -52,6 +59,9 @@ def tool(fn: Callable[..., Any] | None = None, *, name: str | None = None,
             args_model=args_model,
             wants_ctx=wants_ctx,
             privileged=privileged,
+            idempotent=idempotent,
+            max_attempts=max_attempts,
+            timeout_seconds=timeout_seconds,
         )
 
     return make(fn) if fn is not None else make
@@ -59,10 +69,12 @@ def tool(fn: Callable[..., Any] | None = None, *, name: str | None = None,
 
 def tool_from_schema(name: str, description: str, parameters: dict,
                      fn: Callable[..., Any], *, wants_ctx: bool = False,
-                     privileged: bool = False) -> Tool:
+                     privileged: bool = False, idempotent: bool = True,
+                     max_attempts: int | None = None, timeout_seconds: float | None = None) -> Tool:
     """Register a tool from a RAW JSON Schema (MCP / OpenAPI / dynamically-generated) — the escape hatch
     for when you already have a schema and don't want signature introspection. Args are passed through to
     `fn` (permissive validation; the caller owns the schema). `@tool` stays the ergonomic default."""
     args_model = create_model(f"{name}_Args", __config__=ConfigDict(extra="allow"))
     return Tool(name=name, description=description, parameters=parameters, fn=fn,
-                args_model=args_model, wants_ctx=wants_ctx, privileged=privileged)
+                args_model=args_model, wants_ctx=wants_ctx, privileged=privileged,
+                idempotent=idempotent, max_attempts=max_attempts, timeout_seconds=timeout_seconds)

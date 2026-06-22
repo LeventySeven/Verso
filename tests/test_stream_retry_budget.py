@@ -35,7 +35,8 @@ async def test_stream_tool_retry_budget_caps_an_always_retrying_tool():
         "Always retries."
         raise Retry("never happy")
 
-    agent = Agent(model=_always_retry_model(5), tools=[loops], max_tool_retries=2)
+    # stuck_thresholds=None isolates the RETRY BUDGET (doom-loop detection is covered separately).
+    agent = Agent(model=_always_retry_model(5), tools=[loops], max_tool_retries=2, stuck_thresholds=None)
     evs = await _events(agent.stream("go"))                 # must NOT hang or raise
 
     assert evs[-1].type is EventType.DONE
@@ -57,7 +58,7 @@ async def test_stream_max_tool_retries_zero_is_configurable_from_agent():
         "Always retries."
         raise Retry("nope")
 
-    agent = Agent(model=_always_retry_model(4), tools=[loops], max_tool_retries=0)
+    agent = Agent(model=_always_retry_model(4), tools=[loops], max_tool_retries=0, stuck_thresholds=None)
     evs = await _events(agent.stream("go"))
 
     assert evs[-1].type is EventType.DONE

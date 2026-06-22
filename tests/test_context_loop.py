@@ -42,7 +42,7 @@ async def test_budget_triggers_prune_of_old_tool_outputs():
     ]
     responses.append(ModelResponse(text="final", tool_calls=[], usage=Usage()))
     fm = FakeModel(responses)
-    agent = Agent(model=fm, tools=[add], max_context_tokens=1)  # force pruning
+    agent = Agent(model=fm, tools=[add], max_context_tokens=1, stuck_thresholds=None)  # force pruning; stuck off (identical calls drive the prune, not a doom-loop test)
     result = await agent.run("loop a lot")
     assert result.output == "final"
     # the LAST model call should have seen masked old tool outputs

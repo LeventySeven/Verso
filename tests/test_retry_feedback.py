@@ -46,7 +46,9 @@ async def test_tool_retry_budget_caps_an_always_retrying_tool():
     fm = FakeModel([ModelResponse(text="", tool_calls=[ToolCall(id=str(i), name="loops", arguments={"value": "x"})], usage=Usage()) for i in range(5)]
                    + [ModelResponse(text="gave up", tool_calls=[], usage=Usage())])
     hooks = Hooks(post_tool=[lambda call, content: seen.append(content) or content])  # capture every tool result
-    r = await Agent(model=fm, tools=[loops], hooks=hooks, max_tool_retries=2).run("go")
+    # stuck_thresholds=None: this test isolates the RETRY BUDGET, not doom-loop detection (covered in
+    # test_stuck_detection.py) — otherwise the repeated identical call would stop early as STUCK.
+    r = await Agent(model=fm, tools=[loops], hooks=hooks, max_tool_retries=2, stuck_thresholds=None).run("go")
     assert r.stop_reason.value in ("end_turn", "max_steps")           # it TERMINATES (no infinite Retry loop)
     # the BUDGET (not the script) bounded it: exactly 2 'Retry:' feedbacks, then the terminal budget error
     assert sum(1 for c in seen if c.startswith("Retry:")) == 2
@@ -62,7 +64,7 @@ async def test_max_tool_retries_is_configurable_from_agent():
     fm = FakeModel([ModelResponse(text="", tool_calls=[ToolCall(id=str(i), name="loops", arguments={"value": "x"})], usage=Usage()) for i in range(4)]
                    + [ModelResponse(text="stop", tool_calls=[], usage=Usage())])
     hooks = Hooks(post_tool=[lambda call, content: seen.append(content) or content])
-    await Agent(model=fm, tools=[loops], hooks=hooks, max_tool_retries=0).run("go")  # 0 ⇒ no Retry feedback at all
+    await Agent(model=fm, tools=[loops], hooks=hooks, max_tool_retries=0, stuck_thresholds=None).run("go")  # 0 ⇒ no Retry feedback at all
     assert sum(1 for c in seen if c.startswith("Retry:")) == 0        # budget=0 honored from the Agent surface
     assert any("exceeded its retry budget (0)" in c for c in seen)
 

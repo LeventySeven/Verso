@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Sequence
 
 from verso.context.bundle import ContextBundle
 from verso.context.prune import prune
+from verso.core.stuck import StuckThresholds, detect_stuck
 from verso.durable.checkpoint import Checkpoint
 from verso.durable.context import HumanRequest, Paused, RunContext  # noqa: F401  (RunContext used by callers/annotations)
 from verso.durable.serde import msg_from_dict, msg_to_dict
@@ -70,17 +71,22 @@ async def _pause(ctx, bundle, task, usage, step, hooks, resp, tc, request) -> Ag
 async def run_loop(model: Model, tools: Sequence[Tool], task: str,
                    max_steps: int = 25, instructions: str | None = None,
                    max_context_tokens: int | None = None, hooks: "Hooks | None" = None,
-                   ctx: "RunContext | None" = None, max_tool_retries: int = 2) -> AgentResult:
+                   ctx: "RunContext | None" = None, max_tool_retries: int = 2,
+                   max_steps_policy: str = "stop",
+                   stuck_thresholds: "StuckThresholds | None" = StuckThresholds()) -> AgentResult:
     bundle = build_bundle(tools, task, instructions)
     return await _drive(model, tools, task, bundle, Usage(), 1, max_steps,
                         max_context_tokens=max_context_tokens, hooks=hooks, ctx=ctx,
-                        max_tool_retries=max_tool_retries)
+                        max_tool_retries=max_tool_retries, max_steps_policy=max_steps_policy,
+                        stuck_thresholds=stuck_thresholds)
 
 
 async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: ContextBundle,
                  usage: Usage, start_step: int, max_steps: int, *,
                  max_context_tokens: int | None = None, hooks: "Hooks | None" = None,
-                 ctx: "RunContext | None" = None, max_tool_retries: int = 2) -> AgentResult:
+                 ctx: "RunContext | None" = None, max_tool_retries: int = 2,
+                 max_steps_policy: str = "stop",
+                 stuck_thresholds: "StuckThresholds | None" = StuckThresholds()) -> AgentResult:
     from verso.safety.hooks import Hooks, PermissionDecision
     hooks = hooks or Hooks()
     tool_map = {t.name: t for t in tools}
@@ -91,6 +97,11 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
         if not await hooks.run_should_continue(bundle, ctx=ctx):
             last = next((m.content for m in reversed(bundle.history) if m.role == "assistant" and m.content), "")
             result = AgentResult(output=last, stop_reason=StopReason.END_TURN, usage=usage, steps=step - 1)
+            await hooks.run_on_stop(result, ctx=ctx)
+            return result
+        if stuck_thresholds is not None and detect_stuck(bundle.history, stuck_thresholds):
+            last = next((m.content for m in reversed(bundle.history) if m.role == "assistant" and m.content), "")
+            result = AgentResult(output=last, stop_reason=StopReason.STUCK, usage=usage, steps=step - 1)
             await hooks.run_on_stop(result, ctx=ctx)
             return result
         if max_context_tokens is not None and bundle.estimate_tokens() > max_context_tokens:
@@ -143,9 +154,13 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
                         return await _pause(ctx, bundle, task, usage, step, hooks, resp, tc, p.request)
                     content = f"Tool '{tc.name}' requested human input but this run is not durable; it did not pause."
                 except Retry as r:
+                    # per-tool budget: explicit max_attempts wins; else non-idempotent tools get 0 retries
+                    # (re-running a side effect is a correctness bug); else the global max_tool_retries.
+                    allowed = (t.max_attempts - 1) if t.max_attempts is not None else (
+                        max_tool_retries if t.idempotent else 0)
                     retries[tc.name] = retries.get(tc.name, 0) + 1
-                    if retries[tc.name] > max_tool_retries:
-                        content = f"Error: tool '{tc.name}' exceeded its retry budget ({max_tool_retries})."
+                    if retries[tc.name] > allowed:
+                        content = f"Error: tool '{tc.name}' exceeded its retry budget ({allowed})."
                     else:
                         content = f"Retry: {r.feedback}"
                 else:
@@ -185,7 +200,14 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
             continue   # re-drive after a vetoed DONE (bounded by max_verify_retries + max_steps)
         _checkpoint(ctx, bundle, task, usage, step)   # per-step crash-recovery checkpoint (no pending)
 
-    result = AgentResult(output="", stop_reason=StopReason.MAX_STEPS, usage=usage, steps=max_steps)
+    output = ""
+    if max_steps_policy == "generate":
+        # opt-in grace call: one tool-less completion so a budget-exhausted run returns a best-effort
+        # answer instead of '' (still stop_reason=MAX_STEPS — the run did hit the cap).
+        grace = await model.complete(bundle.to_messages(), [], system=bundle.system)
+        usage = usage + grace.usage
+        output = grace.text
+    result = AgentResult(output=output, stop_reason=StopReason.MAX_STEPS, usage=usage, steps=max_steps)
     await hooks.run_on_stop(result, ctx=ctx)
     return result
 
@@ -194,7 +216,8 @@ async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", ap
                       answer: object = None, override_args: dict | None = None,
                       deny_message: str | None = None, skip: bool = False,
                       max_steps: int = 25, max_context_tokens: int | None = None,
-                      hooks: "Hooks | None" = None) -> AgentResult:
+                      hooks: "Hooks | None" = None, max_steps_policy: str = "stop",
+                      stuck_thresholds: "StuckThresholds | None" = StuckThresholds()) -> AgentResult:
     if ctx.store is None:
         raise ValueError("resume requires a checkpointer")
     cp = ctx.store.load(ctx.trace_id)
@@ -258,4 +281,5 @@ async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", ap
             content = _truncate_tool_output(content, ctx.tool_output_budget)
         bundle.history.append(Message(role="tool", content=content, tool_call_id=tc_id, name=tc_name))
     return await _drive(model, tools, cp.task, bundle, usage, cp.step + 1, max_steps,
-                        max_context_tokens=max_context_tokens, hooks=hooks, ctx=ctx)
+                        max_context_tokens=max_context_tokens, hooks=hooks, ctx=ctx,
+                        max_steps_policy=max_steps_policy, stuck_thresholds=stuck_thresholds)
