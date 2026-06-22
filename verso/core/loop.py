@@ -4,6 +4,7 @@ import json
 from typing import TYPE_CHECKING, Sequence
 
 from verso.context.bundle import ContextBundle
+from verso.context.history import repair_history
 from verso.context.prune import prune
 from verso.core.stuck import StuckThresholds, detect_stuck
 from verso.durable.checkpoint import Checkpoint
@@ -92,6 +93,9 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
     tool_map = {t.name: t for t in tools}
     retries: dict[str, int] = {}
     verify_count = 0   # re-drives spent on on_stop vetoes at natural terminations (END_TURN / DONE)
+    # entry-guard: a crash-recovered / forked / hand-built history may carry orphan tool_calls or results;
+    # repair once so every model.complete() below gets a valid payload. No-op (shape-preserving) when healthy.
+    bundle.history = repair_history(bundle.history)
 
     for step in range(start_step, max_steps + 1):
         if not await hooks.run_should_continue(bundle, ctx=ctx):

@@ -34,3 +34,33 @@ def merge_messages(existing: Sequence[Message],
         else:
             result.append(item)
     return result
+
+
+def repair_history(history: Sequence[Message]) -> list[Message]:
+    """Make a possibly-malformed message history (crash-recovered, forked, or hand-built) into a VALID
+    provider payload — shape-preserving (no-op) on a healthy history. Fixes the structural faults that
+    otherwise cause cryptic provider 400s on durable resume:
+      - an assistant tool_call with NO matching tool result -> append a synthetic '[interrupted]' result
+      - a tool result with NO matching assistant tool_call   -> drop it (orphan)
+      - a duplicate tool_call_id among results               -> keep the first
+    Tool results are emitted right after the assistant turn that opened them, in tool_call order (already
+    true for a healthy history → the sequence is preserved). Returns a NEW list; never mutates `history`."""
+    results: dict[str, Message] = {}
+    for m in history:
+        if m.role == "tool" and m.tool_call_id is not None and m.tool_call_id not in results:
+            results[m.tool_call_id] = m         # first occurrence wins (dedup)
+    out: list[Message] = []
+    consumed: set[str] = set()
+    for m in history:
+        if m.role == "tool":
+            continue                            # re-emitted below, right after the assistant turn
+        out.append(m)
+        if m.role == "assistant" and m.tool_calls:
+            for tc in m.tool_calls:
+                if tc.id in consumed:
+                    continue
+                consumed.add(tc.id)
+                out.append(results.get(tc.id) or Message(
+                    role="tool", tool_call_id=tc.id, name=tc.name,
+                    content="[interrupted: no tool result was recorded]"))
+    return out
