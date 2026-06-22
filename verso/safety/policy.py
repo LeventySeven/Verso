@@ -1,7 +1,7 @@
 # verso/safety/policy.py
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Callable
+from typing import Callable, Iterable
 
 from verso.safety.hooks import PermissionDecision
 
@@ -49,15 +49,26 @@ def ask_every(*tools: str) -> Decider:
     return decide
 
 
-def ask_once(*tools: str) -> Decider:
+def ask_once(*tools: str, remembered: Iterable[str] | None = None,
+             on_remember: Callable[[str], None] | None = None) -> Decider:
     """ASK the first time each (named) tool is seen, then ALLOW it thereafter — the 'approve once,
-    trust for the session' UX. State lives in the returned decider; build a fresh one per session."""
+    trust for the session' UX. (It trusts after the first PROMPT, regardless of the human's answer.)
+    State lives in the returned decider; build a fresh one per session.
+
+    Durable persistence (optional — the seam-consistent path): pass `remembered` to RESTORE the
+    already-prompted set from a prior session/process, and `on_remember(tool_name)` to be notified when a
+    new tool is first prompted so you can PERSIST it — so a durable run that resumes in a fresh process does
+    NOT re-prompt for an already-decided tool (the seam survives the restart; now the approval does too).
+    Verso owns no store: the caller provides the persistence. Both default None → in-memory, session-scoped,
+    byte-identical to before. `remembered` is copied, never mutated."""
     names: set[str] = set(tools)
-    seen: set[str] = set()
+    seen: set[str] = set(remembered or ())
     def decide(call: ToolCallView) -> PermissionDecision:
         name = call[0]
         if (not names or name in names) and name not in seen:
             seen.add(name)
+            if on_remember is not None:
+                on_remember(name)
             return PermissionDecision.ASK
         return PermissionDecision.ALLOW
     return decide
