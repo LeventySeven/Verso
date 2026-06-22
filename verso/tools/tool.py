@@ -1,11 +1,46 @@
 # verso/tools/tool.py
 from __future__ import annotations
 import inspect
+import re
 import typing
 from dataclasses import dataclass
 from typing import Any, Callable
 
 from pydantic import ConfigDict, create_model
+
+_SECTION_RE = re.compile(r"^(args|arguments|parameters|returns?|raises?|yields?|examples?|notes?)\s*:\s*$", re.I)
+_ARG_RE = re.compile(r"^(\w+)\s*(?:\([^)]*\))?\s*:\s*(.*)$")   # `name: desc` or `name (type): desc`
+
+
+def _split_doc(doc: str) -> tuple[str, dict[str, str]]:
+    """Split a Google-style docstring into (summary, {param: description}).
+
+    The summary is everything before the first ``Args:``/``Returns:``/… section; the ``Args:`` block
+    becomes per-parameter descriptions. A docstring with NO such section returns the whole text as the
+    summary and an empty mapping — so a tool that doesn't use the convention stays byte-identical (its
+    top-level description is unchanged and no param descriptions are injected)."""
+    summary: list[str] = []
+    args: dict[str, str] = {}
+    in_args = False
+    seen_section = False
+    cur: str | None = None
+    for raw in doc.splitlines():
+        s = raw.strip()
+        if _SECTION_RE.match(s):
+            seen_section = True
+            in_args = s.split(":", 1)[0].strip().lower() in ("args", "arguments", "parameters")
+            cur = None
+            continue
+        if in_args:
+            m = _ARG_RE.match(s)
+            if m:
+                cur = m.group(1)
+                args[cur] = m.group(2).strip()
+            elif s and cur is not None:               # a wrapped continuation of the current arg
+                args[cur] = f"{args[cur]} {s}".strip()
+        elif not seen_section:
+            summary.append(raw)
+    return "\n".join(summary).strip(), args
 
 
 @dataclass
@@ -50,10 +85,18 @@ def tool(fn: Callable[..., Any] | None = None, *, name: str | None = None,
         args_model = _build_args_model(f)
         schema = args_model.model_json_schema()
         schema.pop("title", None)
+        # lift a Google-style `Args:` block onto the per-parameter JSON-schema descriptions (the model
+        # reads argument guidance there); the summary becomes the tool-level description. setdefault so
+        # an explicit pydantic Field(description=) wins. No Args block ⇒ byte-identical to before.
+        summary, arg_docs = _split_doc(inspect.getdoc(f) or "")
+        props = schema.get("properties", {})
+        for pname, pdesc in arg_docs.items():
+            if pname in props and pdesc:
+                props[pname].setdefault("description", pdesc)
         wants_ctx = "ctx" in inspect.signature(f).parameters
         return Tool(
             name=name or f.__name__,
-            description=(description or inspect.getdoc(f) or "").strip(),
+            description=(description or summary or "").strip(),
             parameters=schema,
             fn=f,
             args_model=args_model,
