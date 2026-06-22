@@ -1,6 +1,7 @@
 # verso/evals/suite.py
 from __future__ import annotations
 import math
+from collections import Counter
 from dataclasses import dataclass, field
 from typing import Callable
 
@@ -29,6 +30,33 @@ class TraceCheck:
 
     def score(self, span: VersoSpan) -> VersoScore:
         ok = bool(self.check(span))
+        return VersoScore(name=self.name, passed=ok, value=1.0 if ok else 0.0, kind="trace")
+
+
+@dataclass(frozen=True)
+class TrajectoryCheck:
+    """A deterministic check over the ORDERED tool path (the names from `span.tool_calls()`) against an
+    `expected` sequence — the most common process-level eval, named instead of hand-rolled. `match`:
+      - 'exact'     : the actual tool-name list equals `expected` exactly
+      - 'in_order'  : `expected` is an ordered SUBSEQUENCE of the actual names (extra calls allowed between)
+      - 'any_order' : every `expected` name appears (multiset subset), order irrelevant
+    Same `.score()` shape as Assertion/TraceCheck (kind='trace'), so it drops straight into
+    `Eval.unit(trace_checks=[...])`."""
+    name: str
+    expected: tuple
+    match: str = "in_order"
+
+    def score(self, span: VersoSpan) -> VersoScore:
+        actual = [n for n, *_ in span.tool_calls()]
+        exp = list(self.expected)
+        if self.match == "exact":
+            ok = actual == exp
+        elif self.match == "any_order":
+            counts = Counter(actual)
+            ok = all(counts[name] >= need for name, need in Counter(exp).items())
+        else:  # 'in_order' — expected is an ordered subsequence of the actual names
+            it = iter(actual)
+            ok = all(any(a == e for a in it) for e in exp)
         return VersoScore(name=self.name, passed=ok, value=1.0 if ok else 0.0, kind="trace")
 
 

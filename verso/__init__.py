@@ -14,7 +14,7 @@ from verso.model.retry import RetryPolicy, AttemptRecord, call_with_retry
 from verso.model.errors import FailureKind, classify
 from verso.stream.events import StreamEvent, EventType
 from verso.evals import (
-    Eval, Assertion, TraceCheck, VersoSpan, VersoScore, define_outcome, LLMJudge,
+    Eval, Assertion, TraceCheck, TrajectoryCheck, VersoSpan, VersoScore, define_outcome, LLMJudge,
     JudgePanel, CalibrationReport, BestOfN, PredictReport, LiftReport, to_otel_attrs,
 )
 from verso.memory import Memory, MemoryType
@@ -36,7 +36,7 @@ __all__ = [
     "FailoverModel", "AllCandidatesFailed", "RetryPolicy", "AttemptRecord",
     "call_with_retry", "FailureKind", "classify",
     "StreamEvent", "EventType",
-    "Eval", "Assertion", "TraceCheck", "VersoSpan", "VersoScore", "define_outcome", "LLMJudge",
+    "Eval", "Assertion", "TraceCheck", "TrajectoryCheck", "VersoSpan", "VersoScore", "define_outcome", "LLMJudge",
     "JudgePanel", "CalibrationReport", "BestOfN", "PredictReport", "LiftReport", "to_otel_attrs",
     "Memory", "MemoryType", "load_skills",
     "Scaffold", "find_scaffolds",
