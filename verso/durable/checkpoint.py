@@ -19,6 +19,20 @@ class Checkpoint:
     usage_out: int = 0
     step: int = 0
     pending: HumanRequest | None = None
+    config: dict | None = None
+    """The agent config this run was checkpointed UNDER — `{"model": str, "tools": [name, ...]}`.
+
+    PRD §14.9: "Checkpoint pins the full config (model version + system prompt + tool set), not just
+    event state; fast model-rollback is a named failure mode." `instructions` (the system prompt) was
+    already pinned above; this adds the other two, so `resume` can tell that the agent it is resuming
+    INTO is not the agent that paused.
+
+    Why it matters: a resumed run replays a history produced by a different model, and re-dispatches a
+    held tool call against the CURRENT tool list. Swap the model or drop a tool between pause and
+    resume and the run silently continues as a different agent — the failure the PRD names.
+
+    `None` on checkpoints written before this field existed; `resume` skips the comparison rather than
+    guessing, so legacy runs resume exactly as before."""
 
 
 @runtime_checkable

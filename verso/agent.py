@@ -76,7 +76,7 @@ class Agent:
 
     async def resume(self, token: str, *, approve: bool = True, answer: object = None,
                      override_args: dict | None = None, deny_message: str | None = None,
-                     skip: bool = False, model=None) -> AgentResult:
+                     skip: bool = False, model=None, allow_config_drift: bool = False) -> AgentResult:
         if self.checkpointer is None:
             raise ValueError("resume requires an Agent constructed with a checkpointer")
         # model=None ⇒ self.model; a paused/forked run can resume on a different model.
@@ -90,7 +90,12 @@ class Agent:
                                  max_steps=self.max_steps,
                                  max_context_tokens=self.max_context_tokens, hooks=self.hooks,
                                  max_steps_policy=self.max_steps_policy,
-                                 stuck_thresholds=self.stuck_thresholds)
+                                 stuck_thresholds=self.stuck_thresholds,
+                                 allow_config_drift=allow_config_drift,
+                                 # An explicit model= IS the "resume on a different model" feature the
+                                 # docstring above promises — the caller already declared the swap, so
+                                 # it must not also trip the drift guard.
+                                 model_overridden=model is not None)
 
     def history(self, token: str) -> list:
         """The per-step checkpoint trajectory of a durable run (ascending step); [] if unknown."""

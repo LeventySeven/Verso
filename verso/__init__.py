@@ -6,6 +6,7 @@ from verso.tools.tool import tool, Tool, tool_from_schema
 from verso.tools.coerce import CoercionError, StructuredOutputError
 from verso.tools.errors import Retry
 from verso.types import AgentResult, StopReason, Usage
+from verso.core.loop import ConfigDriftError
 from verso.model.base import Model, Message, ModelResponse, ToolCall
 from verso.context.bundle import ContextBundle
 from verso.context.history import merge_messages, RemoveMessage, REMOVE_ALL_MESSAGES
@@ -30,6 +31,7 @@ from verso.durable import RunContext, InMemoryCheckpointStore, SqliteCheckpointS
 __version__ = "0.0.1"
 __all__ = [
     "Agent", "tool", "Tool", "tool_from_schema", "AgentResult", "StopReason", "Usage",
+    "ConfigDriftError",
     "Model", "Message", "ModelResponse", "ToolCall", "init_model",
     "CoercionError", "StructuredOutputError", "Retry", "ContextBundle",
     "merge_messages", "RemoveMessage", "REMOVE_ALL_MESSAGES",

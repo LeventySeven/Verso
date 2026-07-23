@@ -42,6 +42,44 @@ def build_bundle(tools: Sequence[Tool], task: str, instructions: str | None) -> 
                          tools=list(tools))
 
 
+def config_fingerprint(model_id: str, tools) -> dict:
+    """The agent identity a resume must match: model id + sorted tool names.
+
+    Sorted so registration order never registers as drift — only a genuine add/remove does.
+    `instructions` is deliberately NOT here: it is already stored on the Checkpoint and RESTORED
+    from it on resume, so it cannot drift."""
+    return {"model": model_id or "", "tools": sorted(t.name for t in tools)}
+
+
+class ConfigDriftError(RuntimeError):
+    """Raised when a resume targets an agent whose config differs from the one that checkpointed.
+
+    Resuming replays a history produced by the old config and re-dispatches any held tool call
+    against the CURRENT tool list, so drift silently continues the run as a different agent —
+    PRD §14.9's named "fast model-rollback" failure mode. Pass `allow_config_drift=True` to
+    proceed anyway (an explicit `model=` override is already treated as intentional)."""
+
+
+def _drift(cp_config: dict | None, now: dict, model_overridden: bool) -> list[str]:
+    """Human-readable drift lines; [] when the configs match or the checkpoint predates the field."""
+    if not cp_config:
+        return []      # legacy checkpoint — nothing to compare against, resume as before
+    out: list[str] = []
+    was_model, now_model = cp_config.get("model", ""), now["model"]
+    # An explicit resume(model=…) IS the documented "resume on a different model" feature — the caller
+    # already said so, so it is not drift. Everything else is.
+    if not model_overridden and was_model != now_model:
+        out.append(f"model: checkpointed under {was_model!r}, resuming with {now_model!r}")
+    was_tools, now_tools = set(cp_config.get("tools", [])), set(now["tools"])
+    if was_tools != now_tools:
+        missing, extra = sorted(was_tools - now_tools), sorted(now_tools - was_tools)
+        if missing:
+            out.append(f"tools removed since checkpoint: {missing}")
+        if extra:
+            out.append(f"tools added since checkpoint: {extra}")
+    return out
+
+
 def _checkpoint(ctx, bundle, task, usage, step, pending=None):
     if ctx is None or ctx.store is None:
         return
@@ -49,6 +87,7 @@ def _checkpoint(ctx, bundle, task, usage, step, pending=None):
         trace_id=ctx.trace_id, task=task, instructions=bundle.instructions,
         history=[msg_to_dict(m) for m in bundle.history],
         usage_in=usage.input_tokens, usage_out=usage.output_tokens, step=step, pending=pending,
+        config=config_fingerprint(getattr(ctx, "model", ""), bundle.tools),
     ))
 
 
@@ -224,12 +263,23 @@ async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", ap
                       deny_message: str | None = None, skip: bool = False,
                       max_steps: int = 25, max_context_tokens: int | None = None,
                       hooks: "Hooks | None" = None, max_steps_policy: str = "stop",
-                      stuck_thresholds: "StuckThresholds | None" = StuckThresholds()) -> AgentResult:
+                      stuck_thresholds: "StuckThresholds | None" = StuckThresholds(),
+                      allow_config_drift: bool = False, model_overridden: bool = False) -> AgentResult:
     if ctx.store is None:
         raise ValueError("resume requires a checkpointer")
     cp = ctx.store.load(ctx.trace_id)
     if cp is None:
         raise KeyError(f"no checkpoint for {ctx.trace_id}")
+    # Config pin (PRD §14.9). Fail BEFORE any model call or tool re-dispatch: the whole point is to
+    # stop a silently-different agent from continuing the run, so the check must precede side effects.
+    if not allow_config_drift:
+        drift = _drift(cp.config, config_fingerprint(getattr(ctx, "model", ""), tools), model_overridden)
+        if drift:
+            raise ConfigDriftError(
+                "cannot resume: the agent config changed since this run was checkpointed —\n  "
+                + "\n  ".join(drift)
+                + "\nResume with the original config, or pass allow_config_drift=True to continue anyway."
+            )
     bundle = ContextBundle(instructions=cp.instructions,
                            history=[msg_from_dict(d) for d in cp.history],
                            tools=list(tools))

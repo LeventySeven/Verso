@@ -26,6 +26,7 @@ class SqliteCheckpointStore:
             "version": 1,        # forward-compat marker; load() reads specific keys, tolerates its absence in old blobs.
             "trace_id": cp.trace_id, "task": cp.task, "instructions": cp.instructions,
             "history": cp.history, "usage_in": cp.usage_in, "usage_out": cp.usage_out, "step": cp.step,
+            "config": cp.config,
             "pending": None if p is None else {"prompt": p.prompt, "key": p.key, "kind": p.kind,
                                                "tool_name": p.tool_name, "tool_call_id": p.tool_call_id,
                                                "human_prompt": p.human_prompt},
@@ -43,6 +44,7 @@ class SqliteCheckpointStore:
         return Checkpoint(
             trace_id=d["trace_id"], task=d["task"], instructions=d["instructions"],
             history=d["history"], usage_in=d["usage_in"], usage_out=d["usage_out"], step=d["step"],
+            config=d.get("config"),    # old blobs lack it -> None (resume skips the drift check)
             pending=None if pend is None else HumanRequest(
                 prompt=pend["prompt"], key=pend["key"], kind=pend["kind"],
                 tool_name=pend["tool_name"], tool_call_id=pend["tool_call_id"],
