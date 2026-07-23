@@ -119,7 +119,7 @@ verso/
   evals/        unit · judge-panel · define_outcome(bounded) · grounding-verify   ← the wedge
   stream/       one structured event stream · resumable transport · background runs
   runtime/      tactical (in-memory)  +  durable (event-sourced checkpoint/resume/HITL)  ← the seam
-  orchestrate/  OPT-IN: subagent-as-context-isolation · parallel fan-out · graph escape hatch
+  orchestrate/  OPT-IN, SEPARATE IMPORT: subagent-as-context-isolation · bounded parallel fan-out · cross-model reviewer  [SHIPPED 2026-07-23: fan_out / spawn / Reviewer; graph escape hatch still deferred]
   safety/       permissions (allow/deny/ask/defer) · confidence router · 5-stage hooks · trust hierarchy
 ```
 
@@ -223,6 +223,15 @@ The same loop, executed against a persisted event log.
 
 Single agent + tool parallelism is the default. Multi-agent is never implicit.
 
+> **Status (2026-07-23):** `verso/orchestrate/` is **shipped** — `fan_out` (bounded, failure-isolated),
+> `spawn` (context-isolated sub-agent, depth-capped, fork modes), and `Reviewer` (cross-model critic).
+> Built after a 48-agent census of 332 production teardowns found the orchestrator-workers shape in
+> **69 independent systems** — the largest designed-but-unbuilt gap in Verso, and the one candidate
+> that cleared every gate (≥10 products · absent from source · not a non-goal · additive). It is
+> helpers over `asyncio`, not a runtime; `import verso` does not load it (subprocess-tested). The
+> `orchestrate/graph` escape hatch below remains deferred — the same census put explicit graphs at
+> only ~10% of production, so it stays a non-default, unbuilt escape hatch.
+
 - **Sub-agent = context isolation, not org-chart role-play:** offload an expensive sub-task so its tokens don't pollute the parent; the sub-agent returns a **typed compact summary** (file names + line numbers, not raw content). No parent-history inheritance by default (fork modes: `none | last_n | full`). **Depth cap default = 1** (no nested orchestrators). `[context-engineering]` (Dex Horthy), `[research-deepresearch]`, `[fw-claude-sdk-platforms]`.
 - **Parallel fan-out:** `fan_out(tasks, max_concurrency=4..6)` — the framework orchestrates concurrency (LLMs are bad at it); synchronize only at dependency boundaries. `[startup-ai-pipelines]`, `[agentic-deep]`.
 - **Orchestrator-workers** is the default *durable-layer* multi-agent shape; shared **typed state store** (not message-passing) for coordination. `[agentic-architectures]` (Anthropic +90.2% on breadth-first), `[startup-ai-pipelines]`.
@@ -323,6 +332,7 @@ The full architecture above is locked now; the **code** lands in phases, each do
 - **Phase 1 — memory + the eval wedge.** `memory/` (sqlite-vec, 4-tier typed, RRF retrieval, recall/remember) + `evals/` (`unit`, `judge` panel, `define_outcome`, native traces) + `safety/` hooks (5-stage). **Exit:** an eval suite drives an iteration on the Phase-0 agent.
 - **Phase 2 — the durable seam.** `runtime/durable` (event-sourced checkpoint/resume, `submit/attach`, `ctx.hitl.request`, `await condition`) + `safety/` permissions + confidence router + `max_budget_usd`. **Exit:** the same agent runs a long, crash-resumable, HITL-gated task by flipping `durable=True`.
 - **Phase 3 — opt-in scale.** `orchestrate/` (subagent-as-context-isolation, `fan_out`, orchestrator-workers, reviewer hook, graph escape hatch) + tool adapters (`mcp`, `openapi`, deferred loading) + `pgvector` backend + temporal/audit memory. **Exit:** a multi-agent research task; OSS-readiness review.
+  - **[2026-07-23] `orchestrate/` core shipped early** — `fan_out` + `spawn` (context-isolation, depth cap, fork modes) + `Reviewer` (cross-model). Pulled forward by the pattern census (69/332 production systems). Still deferred in this phase: the `graph` escape hatch (~10% of production — stays unbuilt), MCP/OpenAPI adapters, `pgvector`, and the shared-typed-state `Orchestration`.
 
 ---
 

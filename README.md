@@ -197,6 +197,19 @@ Resume re-executes the tool from the top with the answer returned — **make hit
 
 Resume can also approve-and-edit (`override_args=`), deny-with-reason (`deny_message=`), or skip (`skip=True`). For custom control flow without a graph DSL — routing, retries, fan-out, and the `should_continue` steering hook — see **[`docs/recipes/plain-async-python.md`](docs/recipes/plain-async-python.md)** and the runnable **[`examples/`](examples/)** (`minimal_agent.py` — the <80-line floor; `orchestrator_workers.py` — orchestrator-workers in plain `asyncio.gather`, no graph).
 
+**Opt-in orchestration — a separate import, never the default** (`from verso.orchestrate import fan_out, spawn, Reviewer`). When you *do* fan out, these give the hand-written `asyncio.gather` pattern the three things it lacks: `fan_out` bounds concurrency (LLMs shouldn't self-manage 50 parallel calls) and isolates a failing worker; `spawn` runs a sub-agent as a context-isolation device (its tokens never enter the parent; depth-capped so an orchestrator can't recurse; `fork="none"|"last_n"|"full"`); `Reviewer` is the cross-model "rubber duck," the cheapest multi-agent win. Still no graph, still plain async you can step through. `import verso` never loads it.
+
+```python
+from verso.orchestrate import fan_out, spawn, Reviewer
+
+worker = Agent(model, instructions="Summarize in one sentence.")
+summaries = await fan_out([lambda d=d: worker.run(d) for d in docs], max_concurrency=6)  # bounded, order-preserving
+sub = await spawn(model, "expensive sub-search", tools=[search])                          # child's tokens stay in the child
+review = await Reviewer(other_family_model).review(task, answer)                          # a critic that isn't the author
+```
+
+> Built 2026-07-23 after a 48-agent census of 332 production teardowns found orchestrator-workers in **69 independent systems** — the one gap that cleared every gate (≥10 products · absent from source · not a non-goal · additive). Explicit graphs came in at ~10%, so the graph escape hatch stays deferred.
+
 **Time-travel** — inspect a durable run's per-step trajectory and branch from any point, no graph required:
 
 ```python
