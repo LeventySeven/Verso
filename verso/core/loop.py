@@ -113,12 +113,13 @@ async def run_loop(model: Model, tools: Sequence[Tool], task: str,
                    max_context_tokens: int | None = None, hooks: "Hooks | None" = None,
                    ctx: "RunContext | None" = None, max_tool_retries: int = 2,
                    max_steps_policy: str = "stop",
-                   stuck_thresholds: "StuckThresholds | None" = StuckThresholds()) -> AgentResult:
+                   stuck_thresholds: "StuckThresholds | None" = StuckThresholds(),
+                   prune_keep_last_n: int = 10) -> AgentResult:
     bundle = build_bundle(tools, task, instructions)
     return await _drive(model, tools, task, bundle, Usage(), 1, max_steps,
                         max_context_tokens=max_context_tokens, hooks=hooks, ctx=ctx,
                         max_tool_retries=max_tool_retries, max_steps_policy=max_steps_policy,
-                        stuck_thresholds=stuck_thresholds)
+                        stuck_thresholds=stuck_thresholds, prune_keep_last_n=prune_keep_last_n)
 
 
 async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: ContextBundle,
@@ -126,7 +127,8 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
                  max_context_tokens: int | None = None, hooks: "Hooks | None" = None,
                  ctx: "RunContext | None" = None, max_tool_retries: int = 2,
                  max_steps_policy: str = "stop",
-                 stuck_thresholds: "StuckThresholds | None" = StuckThresholds()) -> AgentResult:
+                 stuck_thresholds: "StuckThresholds | None" = StuckThresholds(),
+                 prune_keep_last_n: int = 10) -> AgentResult:
     from verso.safety.hooks import Hooks, PermissionDecision
     hooks = hooks or Hooks()
     tool_map = {t.name: t for t in tools}
@@ -148,7 +150,11 @@ async def _drive(model: Model, tools: Sequence[Tool], task: str, bundle: Context
             await hooks.run_on_stop(result, ctx=ctx)
             return result
         if max_context_tokens is not None and bundle.estimate_tokens() > max_context_tokens:
-            bundle.history = prune(bundle.history)
+            # retention is a CALLER decision: shipped harnesses disagree on its very UNIT — tail
+            # turns, a token head, a share of characters, protected tool calls — so there is no
+            # constant to bake in here. (The 45-point spread in that same survey is the TRIGGER,
+            # which is max_context_tokens, not this.) Default 10 = unchanged.
+            bundle.history = prune(bundle.history, keep_last_n=prune_keep_last_n)
 
         await hooks.run_pre_model(bundle, ctx=ctx)
         resp = await model.complete(bundle.to_messages(), bundle.tools, system=bundle.system)
@@ -264,7 +270,8 @@ async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", ap
                       max_steps: int = 25, max_context_tokens: int | None = None,
                       hooks: "Hooks | None" = None, max_steps_policy: str = "stop",
                       stuck_thresholds: "StuckThresholds | None" = StuckThresholds(),
-                      allow_config_drift: bool = False, model_overridden: bool = False) -> AgentResult:
+                      allow_config_drift: bool = False, model_overridden: bool = False,
+                      prune_keep_last_n: int = 10) -> AgentResult:
     if ctx.store is None:
         raise ValueError("resume requires a checkpointer")
     cp = ctx.store.load(ctx.trace_id)
@@ -339,4 +346,5 @@ async def resume_loop(model: Model, tools: Sequence[Tool], ctx: "RunContext", ap
         bundle.history.append(Message(role="tool", content=content, tool_call_id=tc_id, name=tc_name))
     return await _drive(model, tools, cp.task, bundle, usage, cp.step + 1, max_steps,
                         max_context_tokens=max_context_tokens, hooks=hooks, ctx=ctx,
-                        max_steps_policy=max_steps_policy, stuck_thresholds=stuck_thresholds)
+                        max_steps_policy=max_steps_policy, stuck_thresholds=stuck_thresholds,
+                        prune_keep_last_n=prune_keep_last_n)

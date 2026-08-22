@@ -35,7 +35,8 @@ class Agent:
                  checkpointer: object | None = None, deps: object | None = None,
                  max_tool_retries: int = 2, tool_output_budget: int | None = None,
                  trust_tier: str = "act", max_steps_policy: str = "stop",
-                 stuck_thresholds: "StuckThresholds | None" = StuckThresholds()):
+                 stuck_thresholds: "StuckThresholds | None" = StuckThresholds(),
+                 prune_keep_last_n: int = 10):
         self.model = _resolve(model)
         self.tools = list(tools)
         # Trust as a construction-time capability boundary, not a call-time check: a "read"-tier agent
@@ -55,6 +56,12 @@ class Agent:
         self.tool_output_budget = tool_output_budget
         self.max_steps_policy = max_steps_policy
         self.stuck_thresholds = stuck_thresholds
+        # How much survives a budget-triggered prune. The TRIGGER is max_context_tokens; this is the
+        # RETENTION, and it is the caller's call because shipped harnesses do not even agree on its
+        # UNIT: tail-turns (OpenCode `DEFAULT_TAIL_TURNS=2`), a token head (Claude Code 5,000/25,000),
+        # a share of characters (gemini-cli `PRESERVE_THRESHOLD=0.3`), protected tool calls (goose).
+        # There is no constant to pick, so the caller picks.
+        self.prune_keep_last_n = prune_keep_last_n
 
     def inspect(self, task: str) -> ContextBundle:
         """Return the exact ContextBundle the model will receive for `task` (turn 1)."""
@@ -72,7 +79,8 @@ class Agent:
                               max_context_tokens=self.max_context_tokens,
                               hooks=self.hooks, ctx=ctx, max_tool_retries=self.max_tool_retries,
                               max_steps_policy=self.max_steps_policy,
-                              stuck_thresholds=self.stuck_thresholds)
+                              stuck_thresholds=self.stuck_thresholds,
+                              prune_keep_last_n=self.prune_keep_last_n)
 
     async def resume(self, token: str, *, approve: bool = True, answer: object = None,
                      override_args: dict | None = None, deny_message: str | None = None,
@@ -91,6 +99,7 @@ class Agent:
                                  max_context_tokens=self.max_context_tokens, hooks=self.hooks,
                                  max_steps_policy=self.max_steps_policy,
                                  stuck_thresholds=self.stuck_thresholds,
+                                 prune_keep_last_n=self.prune_keep_last_n,
                                  allow_config_drift=allow_config_drift,
                                  # An explicit model= IS the "resume on a different model" feature the
                                  # docstring above promises — the caller already declared the swap, so
@@ -170,7 +179,8 @@ class Agent:
                                    max_context_tokens=self.max_context_tokens,
                                    hooks=self.hooks, ctx=ctx, max_tool_retries=self.max_tool_retries,
                                    max_steps_policy=self.max_steps_policy,
-                                   stuck_thresholds=self.stuck_thresholds):
+                                   stuck_thresholds=self.stuck_thresholds,
+                                   prune_keep_last_n=self.prune_keep_last_n):
             yield ev
 
     @contextmanager

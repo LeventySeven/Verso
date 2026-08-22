@@ -24,7 +24,8 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
                      max_context_tokens: int | None = None,
                      hooks: "Hooks | None" = None, ctx: "RunContext | None" = None,
                      max_tool_retries: int = 2, max_steps_policy: str = "stop",
-                     stuck_thresholds: "StuckThresholds | None" = StuckThresholds()) -> AsyncIterator[StreamEvent]:
+                     stuck_thresholds: "StuckThresholds | None" = StuckThresholds(),
+                     prune_keep_last_n: int = 10) -> AsyncIterator[StreamEvent]:
     from verso.safety.hooks import Hooks, PermissionDecision
     hooks = hooks or Hooks()
     bundle = build_bundle(tools, task, instructions)
@@ -43,7 +44,7 @@ async def run_stream(model: Model, tools: Sequence[Tool], task: str,
             yield StreamEvent(type=EventType.DONE, result=result)
             return
         if max_context_tokens is not None and bundle.estimate_tokens() > max_context_tokens:
-            bundle.history = prune(bundle.history)
+            bundle.history = prune(bundle.history, keep_last_n=prune_keep_last_n)
 
         await hooks.run_pre_model(bundle, ctx=ctx)
         text_parts: list[str] = []
