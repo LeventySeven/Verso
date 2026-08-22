@@ -38,6 +38,17 @@ def _wants_ctx(fn) -> bool:
         return False
 
 
+def _is_decision(d) -> bool:
+    # PermissionDecision is a str-Enum, so the bare strings ("allow"/"deny"/...) are legitimate and
+    # compare equal to the members — accept those, reject everything else (None, True, 0, "yes").
+    # Only consulted under `strict`; the default path is untouched.
+    try:
+        PermissionDecision(d)
+        return True
+    except (ValueError, KeyError, TypeError):
+        return False
+
+
 async def _fire(hook, args, ctx):
     # inject the RunContext only into hooks that declare a `ctx` parameter; ctx-less hooks are
     # called exactly as before (byte-identical back-compat) — same convention as tool ctx-injection.
@@ -58,6 +69,7 @@ class Hooks:
     ask: Callable[[ToolCallView], bool] | None = None                           # ASK resolver (Phase 1)
     should_continue: Callable[..., Any] | None = None                           # (bundle[, ctx]) -> bool; stop the loop when False
     max_verify_retries: int = 1                                                 # re-drive budget when an on_stop hook vetoes a natural stop (1 = at most one re-drive)
+    strict: bool = False                                                        # opt-in: a pre_tool hook returning anything that is not a PermissionDecision raises instead of falling through
 
     async def run_pre_model(self, bundle, ctx=None) -> None:
         for h in self.pre_model:
@@ -70,6 +82,18 @@ class Hooks:
     async def run_pre_tool(self, call: ToolCallView, ctx=None) -> PermissionDecision:
         for h in self.pre_tool:
             d = await _fire(h, (call,), ctx)
+            # A hook returning None is ambiguous: it can mean "no opinion, let another hook decide"
+            # (the documented convention, mirroring post_tool's None=passthrough) or "I meant to DENY
+            # and fell off the end of a branch" — the silent fail-open audited across four shipped
+            # security codebases. Resolving it as ALLOW is the shipped semantic and stays the default,
+            # because flipping it would deny for every hook that legitimately abstains (rule 1).
+            # `strict=True` is for callers who would rather crash than discover the ambiguity in prod.
+            if self.strict and not _is_decision(d):
+                name = getattr(h, "__name__", repr(h))
+                raise ValueError(
+                    f"strict Hooks: pre_tool hook {name!r} returned {d!r} for tool {call[0]!r}; "
+                    "return an explicit PermissionDecision (ALLOW to abstain)."
+                )
             if d and d != PermissionDecision.ALLOW:   # first non-allow wins (most restrictive)
                 return d
         return PermissionDecision.ALLOW
